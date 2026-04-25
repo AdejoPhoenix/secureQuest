@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Tournaments{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h4 class="fw-bold text-white mb-0"><i class="bi bi-trophy-fill text-warning me-2"></i>Tournaments</h4>
+</div>
+
+{% if tournaments %}
+<div class="row g-3">
+  {% for t in tournaments %}
+  <div class="col-md-6 col-xl-4">
+    <div class="card bg-dark border-secondary h-100 tournament-card">
+      <div class="card-body">
+        <div class="d-flex justify-content-between mb-2">
+          <span class="badge difficulty-{{ t.difficulty }}">{{ t.difficulty | upper }}</span>
+          {% if t.is_active %}
+          <span class="badge bg-success"><i class="bi bi-circle-fill me-1" style="font-size:.5rem"></i>Active</span>
+          {% else %}
+          <span class="badge bg-secondary">Inactive</span>
+          {% endif %}
+        </div>
+        <h5 class="fw-bold text-white">{{ t.name }}</h5>
+        <p class="text-muted small">{{ t.description or 'No description provided.' }}</p>
+        <div class="row g-2 mb-3">
+          <div class="col-6">
+            <div class="d-flex align-items-center gap-1 text-muted small">
+              <i class="bi bi-people"></i> {{ t.participant_count }}/{{ t.max_participants }}
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="d-flex align-items-center gap-1 text-muted small">
+              <i class="bi bi-clock"></i> {{ (t.timer_seconds // 60) }}m per challenge
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="d-flex align-items-center gap-1 text-muted small">
+              <i class="bi bi-list-check"></i> {{ t.challenges | length }} challenges
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="d-flex align-items-center gap-1 text-muted small">
+              <i class="bi bi-hourglass-split"></i> {{ (t.total_timer_seconds // 60) }}m total
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card-footer border-secondary bg-transparent">
+        <a href="{{ url_for('main.tournament_detail', tournament_id=t.id) }}" class="btn btn-warning w-100 fw-bold">
+          View Tournament <i class="bi bi-arrow-right"></i>
+        </a>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="text-center text-muted py-5">
+  <i class="bi bi-trophy fs-1 d-block mb-3 text-secondary"></i>
+  <h5 class="text-secondary">No tournaments available yet</h5>
+  <p class="small">Check back soon or ask your admin to create one.</p>
+</div>
+{% endif %}
+{% endblock %}

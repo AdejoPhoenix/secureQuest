@@ -1,0 +1,260 @@
+{% extends "base.html" %}
+{% block title %}Add Module{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-9">
+    <div class="d-flex align-items-center gap-3 mb-4">
+      {% if course %}
+      <a href="{{ url_for('admin.edit_course', course_id=course.id) }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
+      {% endif %}
+      <div>
+        <h4 class="fw-bold text-white mb-0"><i class="bi bi-plus-circle-fill text-success me-2"></i>Add Module</h4>
+        {% if course %}<span class="text-muted small">to: {{ course.name }}</span>{% endif %}
+      </div>
+    </div>
+
+    <div class="card bg-dark border-secondary">
+      <div class="card-body p-4">
+        <form method="POST" id="module-form">
+
+          <!-- Common fields -->
+          <div class="row g-3 mb-4">
+            <div class="col-md-6">
+              <label class="form-label text-light fw-semibold">Module Title *</label>
+              <input type="text" name="title" class="form-control bg-secondary border-secondary text-white"
+                placeholder="e.g. What is Phishing?" required />
+            </div>
+            <div class="col-md-3">
+              <label class="form-label text-light fw-semibold">Module Type *</label>
+              <select name="type" id="module-type" class="form-select bg-secondary border-secondary text-white" onchange="switchType()">
+                <option value="lesson">📖 Lesson</option>
+                <option value="quiz">✅ Quiz</option>
+                <option value="scenario">🎭 Scenario</option>
+                <option value="dragdrop">🎯 Drag & Drop</option>
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label text-light fw-semibold">XP Reward</label>
+              <input type="number" name="xp_reward" class="form-control bg-secondary border-secondary text-white" value="20" min="5" />
+            </div>
+            <div class="col-md-3">
+              <label class="form-label text-light fw-semibold">Order</label>
+              <input type="number" name="order" class="form-control bg-secondary border-secondary text-white"
+                value="{{ course.modules | length if course else 0 }}" min="0" />
+            </div>
+            <div class="col-md-3">
+              <label class="form-label text-light fw-semibold">Pass Score (%)</label>
+              <input type="number" name="pass_score" class="form-control bg-secondary border-secondary text-white" value="70" min="1" max="100" />
+              <div class="form-text text-muted">For quiz / drag-drop only</div>
+            </div>
+            <div class="col-md-6 d-flex align-items-end">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="is_required" id="is_required" value="true" checked />
+                <label class="form-check-label text-light" for="is_required">Required to complete course</label>
+              </div>
+            </div>
+          </div>
+
+          <hr class="border-secondary mb-4" />
+
+          <!-- ── LESSON ─────────────────────────────────────────── -->
+          <div id="section-lesson">
+            <h6 class="text-warning mb-3"><i class="bi bi-file-text me-2"></i>Lesson Content</h6>
+            <div class="mb-3">
+              <label class="form-label text-light">Body (supports HTML)</label>
+              <textarea name="body" class="form-control bg-secondary border-secondary text-white font-monospace" rows="10"
+                placeholder="Write your lesson here. You can use HTML tags: &lt;b&gt;, &lt;ul&gt;, &lt;li&gt;, &lt;code&gt;, &lt;blockquote&gt; etc."></textarea>
+            </div>
+            <h6 class="text-info mb-2">Callout Boxes (optional)</h6>
+            {% for i in range(1,4) %}
+            <div class="row g-2 mb-2 align-items-center">
+              <div class="col-md-3">
+                <select name="callout_type_{{ i }}" class="form-select bg-secondary border-secondary text-white form-select-sm">
+                  <option value="">— no callout —</option>
+                  <option value="info">ℹ️ Info</option>
+                  <option value="warning">⚠️ Warning</option>
+                  <option value="danger">🚨 Danger</option>
+                  <option value="tip">💡 Tip</option>
+                </select>
+              </div>
+              <div class="col-md-9">
+                <input type="text" name="callout_body_{{ i }}" class="form-control bg-secondary border-secondary text-white form-control-sm"
+                  placeholder="Callout {{ i }} text…" />
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+
+          <!-- ── QUIZ ──────────────────────────────────────────── -->
+          <div id="section-quiz" class="d-none">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h6 class="text-warning mb-0"><i class="bi bi-question-circle me-2"></i>Quiz Questions</h6>
+              <button type="button" class="btn btn-sm btn-outline-success" onclick="addQuestion()">
+                <i class="bi bi-plus me-1"></i>Add Question
+              </button>
+            </div>
+            <div id="questions-container"></div>
+            <template id="question-template">
+              <div class="question-block card bg-secondary border-secondary mb-3 p-3" data-qnum="">
+                <div class="d-flex justify-content-between mb-2">
+                  <span class="text-white fw-bold small">Question <span class="qnum-label"></span></span>
+                  <button type="button" class="btn btn-sm btn-outline-danger" onclick="this.closest('.question-block').remove(); renumberQuestions()">Remove</button>
+                </div>
+                <div class="mb-2">
+                  <input type="text" class="form-control bg-dark border-secondary text-white q-text" placeholder="Question text…" />
+                </div>
+                <div class="row g-2 mb-2">
+                  {% for opt in ['a','b','c','d'] %}
+                  <div class="col-md-6">
+                    <div class="input-group input-group-sm">
+                      <span class="input-group-text bg-dark border-secondary text-warning fw-bold">{{ opt | upper }}</span>
+                      <input type="text" class="form-control bg-dark border-secondary text-white q-opt-{{ opt }}" placeholder="Option {{ opt | upper }}" />
+                    </div>
+                  </div>
+                  {% endfor %}
+                </div>
+                <div class="row g-2">
+                  <div class="col-md-3">
+                    <label class="form-label text-muted small">Correct Answer</label>
+                    <select class="form-select form-select-sm bg-dark border-secondary text-white q-correct">
+                      <option value="a">A</option><option value="b">B</option>
+                      <option value="c">C</option><option value="d">D</option>
+                    </select>
+                  </div>
+                  <div class="col-md-9">
+                    <label class="form-label text-muted small">Explanation (shown after answer)</label>
+                    <input type="text" class="form-control form-control-sm bg-dark border-secondary text-white q-explanation" placeholder="Why is this the correct answer?" />
+                  </div>
+                </div>
+              </div>
+            </template>
+            <!-- Hidden inputs populated by JS before submit -->
+            <div id="quiz-hidden-inputs"></div>
+          </div>
+
+          <!-- ── SCENARIO ───────────────────────────────────────── -->
+          <div id="section-scenario" class="d-none">
+            <h6 class="text-warning mb-3"><i class="bi bi-diagram-3 me-2"></i>Scenario</h6>
+            <div class="mb-3">
+              <label class="form-label text-light">Scenario Description *</label>
+              <textarea name="scenario_description" class="form-control bg-secondary border-secondary text-white" rows="5"
+                placeholder="Describe the situation the learner is in…"></textarea>
+            </div>
+            <h6 class="text-info mb-2">Choices</h6>
+            {% for i in range(1,5) %}
+            <div class="card bg-secondary border-secondary mb-2 p-3">
+              <div class="row g-2 align-items-center">
+                <div class="col-md-5">
+                  <input type="text" name="choice{{ i }}_text" class="form-control bg-dark border-secondary text-white form-control-sm"
+                    placeholder="Choice {{ i }} text" />
+                </div>
+                <div class="col-md-5">
+                  <input type="text" name="choice{{ i }}_outcome" class="form-control bg-dark border-secondary text-white form-control-sm"
+                    placeholder="What happens if they pick this?" />
+                </div>
+                <div class="col-md-2">
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="choice{{ i }}_correct" value="true" id="correct{{ i }}" />
+                    <label class="form-check-label text-success small" for="correct{{ i }}">Correct</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="choice{{ i }}_correct" value="false" id="wrong{{ i }}" checked />
+                    <label class="form-check-label text-muted small" for="wrong{{ i }}">Wrong</label>
+                  </div>
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+
+          <!-- ── DRAG & DROP ─────────────────────────────────────── -->
+          <div id="section-dragdrop" class="d-none">
+            <h6 class="text-warning mb-3"><i class="bi bi-arrows-move me-2"></i>Drag & Drop Exercise</h6>
+            <div class="mb-3">
+              <label class="form-label text-light">Instruction</label>
+              <input type="text" name="instruction" class="form-control bg-secondary border-secondary text-white"
+                placeholder="e.g. Drag each item into the correct category" />
+            </div>
+            <div class="mb-3">
+              <label class="form-label text-light">Categories <span class="text-muted small">(comma-separated)</span></label>
+              <input type="text" name="categories" class="form-control bg-secondary border-secondary text-white"
+                placeholder="e.g. Phishing,Legitimate" id="categories-input" />
+            </div>
+            <h6 class="text-info mb-2">Items to Categorise</h6>
+            {% for i in range(1,9) %}
+            <div class="row g-2 mb-2">
+              <div class="col-md-7">
+                <input type="text" name="item{{ i }}_text" class="form-control bg-secondary border-secondary text-white form-control-sm"
+                  placeholder="Item {{ i }} text (e.g. an email subject or link)" />
+              </div>
+              <div class="col-md-5">
+                <input type="text" name="item{{ i }}_category" class="form-control bg-secondary border-secondary text-white form-control-sm"
+                  placeholder="Correct category for item {{ i }}" />
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+
+          <hr class="border-secondary my-4" />
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-success fw-bold px-4" onclick="prepareQuizInputs()">
+              <i class="bi bi-plus-lg me-1"></i>Add Module
+            </button>
+            {% if course %}
+            <a href="{{ url_for('admin.edit_course', course_id=course.id) }}" class="btn btn-outline-secondary">Cancel</a>
+            {% endif %}
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let questionCount = 0;
+
+function switchType() {
+  const type = document.getElementById('module-type').value;
+  ['lesson','quiz','scenario','dragdrop'].forEach(t => {
+    document.getElementById(`section-${t}`).classList.toggle('d-none', t !== type);
+  });
+}
+
+function addQuestion() {
+  questionCount++;
+  const tpl = document.getElementById('question-template').content.cloneNode(true);
+  const block = tpl.querySelector('.question-block');
+  block.dataset.qnum = questionCount;
+  block.querySelector('.qnum-label').textContent = questionCount;
+  // Name the inputs with the question number
+  block.querySelector('.q-text').name = `q${questionCount}_text`;
+  ['a','b','c','d'].forEach(k => {
+    block.querySelector(`.q-opt-${k}`).name = `q${questionCount}_opt_${k}`;
+  });
+  block.querySelector('.q-correct').name = `q${questionCount}_correct`;
+  block.querySelector('.q-explanation').name = `q${questionCount}_explanation`;
+  document.getElementById('questions-container').appendChild(block);
+}
+
+function renumberQuestions() {
+  document.querySelectorAll('.question-block').forEach((block, i) => {
+    const num = i + 1;
+    block.dataset.qnum = num;
+    block.querySelector('.qnum-label').textContent = num;
+    block.querySelector('.q-text').name = `q${num}_text`;
+    ['a','b','c','d'].forEach(k => {
+      block.querySelector(`.q-opt-${k}`).name = `q${num}_opt_${k}`;
+    });
+    block.querySelector('.q-correct').name = `q${num}_correct`;
+    block.querySelector('.q-explanation').name = `q${num}_explanation`;
+  });
+}
+
+function prepareQuizInputs() { /* Inputs are already named correctly */ }
+
+// Start with one question for quiz type
+document.getElementById('module-type').addEventListener('change', () => {
+  if (document.getElementById('module-type').value === 'quiz' && questionCount === 0) addQuestion();
+});
+</script>
+{% endblock %}

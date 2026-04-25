@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Manage Tournaments{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h4 class="fw-bold text-white mb-0"><i class="bi bi-trophy-fill text-warning me-2"></i>Manage Tournaments</h4>
+  <a href="{{ url_for('admin.create_tournament') }}" class="btn btn-warning fw-bold">
+    <i class="bi bi-plus-lg me-1"></i>New Tournament
+  </a>
+</div>
+
+<div class="card bg-dark border-secondary">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-dark table-hover mb-0">
+        <thead class="border-secondary">
+          <tr>
+            <th class="text-muted">Name</th>
+            <th class="text-muted">Difficulty</th>
+            <th class="text-muted text-center">Timer</th>
+            <th class="text-muted text-center">Challenges</th>
+            <th class="text-muted text-center">Players</th>
+            <th class="text-muted text-center">Status</th>
+            <th class="text-muted text-center">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for t in tournaments %}
+          <tr>
+            <td class="fw-semibold text-white">{{ t.name }}</td>
+            <td><span class="badge difficulty-{{ t.difficulty }}">{{ t.difficulty | upper }}</span></td>
+            <td class="text-center text-muted small">{{ (t.timer_seconds // 60) }}m/ch · {{ (t.total_timer_seconds // 60) }}m total</td>
+            <td class="text-center text-muted">{{ t.challenges | length }}</td>
+            <td class="text-center text-muted">{{ t.participant_count }}/{{ t.max_participants }}</td>
+            <td class="text-center">
+              {% if t.is_active %}
+              <span class="badge bg-success">Active</span>
+              {% else %}
+              <span class="badge bg-secondary">Inactive</span>
+              {% endif %}
+            </td>
+            <td class="text-center">
+              <div class="btn-group btn-group-sm">
+                <a href="{{ url_for('admin.edit_tournament', tournament_id=t.id) }}" class="btn btn-outline-primary" title="Edit">
+                  <i class="bi bi-pencil"></i>
+                </a>
+                <a href="{{ url_for('admin.add_challenge', tournament_id=t.id) }}" class="btn btn-outline-success" title="Add Challenge">
+                  <i class="bi bi-plus-circle"></i>
+                </a>
+                <a href="{{ url_for('admin.tournament_report', tournament_id=t.id) }}" class="btn btn-outline-info" title="Report">
+                  <i class="bi bi-graph-up"></i>
+                </a>
+                <form method="POST" action="{{ url_for('admin.delete_tournament', tournament_id=t.id) }}" class="d-inline"
+                  onsubmit="return confirm('Delete \'{{ t.name }}\'? This cannot be undone.')">
+                  <button type="submit" class="btn btn-outline-danger" title="Delete"><i class="bi bi-trash"></i></button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="7" class="text-center text-muted py-5">No tournaments yet. <a href="{{ url_for('admin.create_tournament') }}">Create one</a></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

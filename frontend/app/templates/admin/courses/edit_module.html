@@ -1,0 +1,315 @@
+{% extends "base.html" %}
+{% block title %}Edit Module — {{ module.title }}{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-9">
+    <div class="d-flex align-items-center gap-3 mb-4">
+      <a href="{{ url_for('admin.edit_course', course_id=course.id) }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
+      <div>
+        <h4 class="fw-bold text-white mb-0"><i class="bi bi-pencil-fill text-warning me-2"></i>Edit Module</h4>
+        {% if course %}<span class="text-muted small">{{ course.name }}</span>{% endif %}
+      </div>
+    </div>
+
+    <div class="card bg-dark border-secondary">
+      <div class="card-body p-4">
+        <form method="POST" id="module-form">
+
+          <!-- Common fields -->
+          <div class="row g-3 mb-4">
+            <div class="col-md-6">
+              <label class="form-label text-light fw-semibold">Module Title *</label>
+              <input type="text" name="title" class="form-control bg-secondary border-secondary text-white"
+                value="{{ module.title }}" required />
+            </div>
+            <div class="col-md-3">
+              <label class="form-label text-light fw-semibold">Module Type *</label>
+              <select name="type" id="module-type" class="form-select bg-secondary border-secondary text-white" onchange="switchType()">
+                <option value="lesson"   {% if module.type=='lesson'   %}selected{% endif %}>📖 Lesson</option>
+                <option value="quiz"     {% if module.type=='quiz'     %}selected{% endif %}>✅ Quiz</option>
+                <option value="scenario" {% if module.type=='scenario' %}selected{% endif %}>🎭 Scenario</option>
+                <option value="dragdrop" {% if module.type=='dragdrop' %}selected{% endif %}>🎯 Drag & Drop</option>
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label text-light fw-semibold">XP Reward</label>
+              <input type="number" name="xp_reward" class="form-control bg-secondary border-secondary text-white"
+                value="{{ module.xp_reward }}" min="5" />
+            </div>
+            <div class="col-md-3">
+              <label class="form-label text-light fw-semibold">Order</label>
+              <input type="number" name="order" class="form-control bg-secondary border-secondary text-white"
+                value="{{ module.order }}" min="0" />
+            </div>
+            <div class="col-md-3">
+              <label class="form-label text-light fw-semibold">Pass Score (%)</label>
+              <input type="number" name="pass_score" class="form-control bg-secondary border-secondary text-white"
+                value="{{ module.pass_score }}" min="1" max="100" />
+              <div class="form-text text-muted">For quiz / drag-drop only</div>
+            </div>
+            <div class="col-md-6 d-flex align-items-end">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="is_required" id="is_required"
+                  value="true" {% if module.is_required %}checked{% endif %} />
+                <label class="form-check-label text-light" for="is_required">Required to complete course</label>
+              </div>
+            </div>
+          </div>
+
+          <hr class="border-secondary mb-4" />
+
+          {# ── LESSON ──────────────────────────────────────────────── #}
+          {% set content = module.content or {} %}
+          <div id="section-lesson" {% if module.type != 'lesson' %}class="d-none"{% endif %}>
+            <h6 class="text-warning mb-3"><i class="bi bi-file-text me-2"></i>Lesson Content</h6>
+            <div class="mb-3">
+              <label class="form-label text-light">Body (supports HTML)</label>
+              <textarea name="body" class="form-control bg-secondary border-secondary text-white font-monospace" rows="14"
+                >{{ content.get('body','') }}</textarea>
+            </div>
+            <h6 class="text-info mb-2">Callout Boxes (optional)</h6>
+            {% set callouts = content.get('callouts', []) %}
+            {% for i in range(1,4) %}
+            {% set cb = callouts[i-1] if callouts|length >= i else {} %}
+            <div class="row g-2 mb-2 align-items-center">
+              <div class="col-md-3">
+                <select name="callout_type_{{ i }}" class="form-select bg-secondary border-secondary text-white form-select-sm">
+                  <option value="">— no callout —</option>
+                  <option value="info"    {% if cb.get('type')=='info'    %}selected{% endif %}>ℹ️ Info</option>
+                  <option value="warning" {% if cb.get('type')=='warning' %}selected{% endif %}>⚠️ Warning</option>
+                  <option value="danger"  {% if cb.get('type')=='danger'  %}selected{% endif %}>🚨 Danger</option>
+                  <option value="tip"     {% if cb.get('type')=='tip'     %}selected{% endif %}>💡 Tip</option>
+                </select>
+              </div>
+              <div class="col-md-9">
+                <input type="text" name="callout_body_{{ i }}" class="form-control bg-secondary border-secondary text-white form-control-sm"
+                  value="{{ cb.get('text','') }}" placeholder="Callout {{ i }} text…" />
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+
+          {# ── QUIZ ────────────────────────────────────────────────── #}
+          <div id="section-quiz" {% if module.type != 'quiz' %}class="d-none"{% endif %}>
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h6 class="text-warning mb-0"><i class="bi bi-question-circle me-2"></i>Quiz Questions</h6>
+              <button type="button" class="btn btn-sm btn-outline-success" onclick="addQuestion()">
+                <i class="bi bi-plus me-1"></i>Add Question
+              </button>
+            </div>
+            <div id="questions-container">
+              {% set questions = content.get('questions', []) %}
+              {% for q in questions %}
+              <div class="question-block card bg-secondary border-secondary mb-3 p-3" data-qnum="{{ loop.index }}">
+                <div class="d-flex justify-content-between mb-2">
+                  <span class="text-white fw-bold small">Question <span class="qnum-label">{{ loop.index }}</span></span>
+                  <button type="button" class="btn btn-sm btn-outline-danger"
+                    onclick="this.closest('.question-block').remove(); renumberQuestions()">Remove</button>
+                </div>
+                <div class="mb-2">
+                  <input type="text" name="q{{ loop.index }}_text" class="form-control bg-dark border-secondary text-white q-text"
+                    value="{{ q.text }}" placeholder="Question text…" />
+                </div>
+                <div class="row g-2 mb-2">
+                  {% for opt in ['a','b','c','d'] %}
+                  <div class="col-md-6">
+                    <div class="input-group input-group-sm">
+                      <span class="input-group-text bg-dark border-secondary text-warning fw-bold">{{ opt|upper }}</span>
+                      <input type="text" name="q{{ loop.index }}_opt_{{ opt }}"
+                        class="form-control bg-dark border-secondary text-white q-opt-{{ opt }}"
+                        value="{{ q.options.get(opt,'') }}" placeholder="Option {{ opt|upper }}" />
+                    </div>
+                  </div>
+                  {% endfor %}
+                </div>
+                <div class="row g-2">
+                  <div class="col-md-3">
+                    <label class="form-label text-muted small">Correct Answer</label>
+                    <select name="q{{ loop.index }}_correct" class="form-select form-select-sm bg-dark border-secondary text-white q-correct">
+                      {% for opt in ['a','b','c','d'] %}
+                      <option value="{{ opt }}" {% if q.correct == opt %}selected{% endif %}>{{ opt|upper }}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                  <div class="col-md-9">
+                    <label class="form-label text-muted small">Explanation</label>
+                    <input type="text" name="q{{ loop.index }}_explanation"
+                      class="form-control form-control-sm bg-dark border-secondary text-white q-explanation"
+                      value="{{ q.explanation }}" placeholder="Why is this the correct answer?" />
+                  </div>
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+            <template id="question-template">
+              <div class="question-block card bg-secondary border-secondary mb-3 p-3" data-qnum="">
+                <div class="d-flex justify-content-between mb-2">
+                  <span class="text-white fw-bold small">Question <span class="qnum-label"></span></span>
+                  <button type="button" class="btn btn-sm btn-outline-danger"
+                    onclick="this.closest('.question-block').remove(); renumberQuestions()">Remove</button>
+                </div>
+                <div class="mb-2">
+                  <input type="text" class="form-control bg-dark border-secondary text-white q-text" placeholder="Question text…" />
+                </div>
+                <div class="row g-2 mb-2">
+                  {% for opt in ['a','b','c','d'] %}
+                  <div class="col-md-6">
+                    <div class="input-group input-group-sm">
+                      <span class="input-group-text bg-dark border-secondary text-warning fw-bold">{{ opt|upper }}</span>
+                      <input type="text" class="form-control bg-dark border-secondary text-white q-opt-{{ opt }}"
+                        placeholder="Option {{ opt|upper }}" />
+                    </div>
+                  </div>
+                  {% endfor %}
+                </div>
+                <div class="row g-2">
+                  <div class="col-md-3">
+                    <label class="form-label text-muted small">Correct Answer</label>
+                    <select class="form-select form-select-sm bg-dark border-secondary text-white q-correct">
+                      <option value="a">A</option><option value="b">B</option>
+                      <option value="c">C</option><option value="d">D</option>
+                    </select>
+                  </div>
+                  <div class="col-md-9">
+                    <label class="form-label text-muted small">Explanation</label>
+                    <input type="text" class="form-control form-control-sm bg-dark border-secondary text-white q-explanation"
+                      placeholder="Why is this the correct answer?" />
+                  </div>
+                </div>
+              </div>
+            </template>
+          </div>
+
+          {# ── SCENARIO ────────────────────────────────────────────── #}
+          {% set choices = content.get('choices', [{},{},{},{}]) %}
+          <div id="section-scenario" {% if module.type != 'scenario' %}class="d-none"{% endif %}>
+            <h6 class="text-warning mb-3"><i class="bi bi-diagram-3 me-2"></i>Scenario</h6>
+            <div class="mb-3">
+              <label class="form-label text-light">Scenario Description *</label>
+              <textarea name="scenario_description" class="form-control bg-secondary border-secondary text-white" rows="6"
+                >{{ content.get('description','') }}</textarea>
+            </div>
+            <h6 class="text-info mb-2">Choices</h6>
+            {% for i in range(1,5) %}
+            {% set ch = choices[i-1] if choices|length >= i else {} %}
+            <div class="card bg-secondary border-secondary mb-2 p-3">
+              <div class="row g-2 align-items-center">
+                <div class="col-md-5">
+                  <input type="text" name="choice{{ i }}_text"
+                    class="form-control bg-dark border-secondary text-white form-control-sm"
+                    value="{{ ch.get('text','') }}" placeholder="Choice {{ i }} text" />
+                </div>
+                <div class="col-md-5">
+                  <input type="text" name="choice{{ i }}_outcome"
+                    class="form-control bg-dark border-secondary text-white form-control-sm"
+                    value="{{ ch.get('outcome','') }}" placeholder="What happens if they pick this?" />
+                </div>
+                <div class="col-md-2">
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="choice{{ i }}_correct" value="true"
+                      id="correct{{ i }}" {% if ch.get('is_correct') %}checked{% endif %} />
+                    <label class="form-check-label text-success small" for="correct{{ i }}">Correct</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="choice{{ i }}_correct" value="false"
+                      id="wrong{{ i }}" {% if not ch.get('is_correct') %}checked{% endif %} />
+                    <label class="form-check-label text-muted small" for="wrong{{ i }}">Wrong</label>
+                  </div>
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+
+          {# ── DRAG & DROP ─────────────────────────────────────────── #}
+          {% set dd_items = content.get('items', []) %}
+          <div id="section-dragdrop" {% if module.type != 'dragdrop' %}class="d-none"{% endif %}>
+            <h6 class="text-warning mb-3"><i class="bi bi-arrows-move me-2"></i>Drag & Drop Exercise</h6>
+            <div class="mb-3">
+              <label class="form-label text-light">Instruction</label>
+              <input type="text" name="instruction" class="form-control bg-secondary border-secondary text-white"
+                value="{{ content.get('instruction','') }}"
+                placeholder="e.g. Drag each item into the correct category" />
+            </div>
+            <div class="mb-3">
+              <label class="form-label text-light">Categories <span class="text-muted small">(comma-separated)</span></label>
+              <input type="text" name="categories" class="form-control bg-secondary border-secondary text-white"
+                value="{{ content.get('categories', []) | join(', ') }}"
+                placeholder="e.g. Phishing,Legitimate" />
+            </div>
+            <h6 class="text-info mb-2">Items to Categorise</h6>
+            {% for i in range(1,9) %}
+            {% set item = dd_items[i-1] if dd_items|length >= i else {} %}
+            <div class="row g-2 mb-2">
+              <div class="col-md-7">
+                <input type="text" name="item{{ i }}_text"
+                  class="form-control bg-secondary border-secondary text-white form-control-sm"
+                  value="{{ item.get('text','') }}" placeholder="Item {{ i }} text" />
+              </div>
+              <div class="col-md-5">
+                <input type="text" name="item{{ i }}_category"
+                  class="form-control bg-secondary border-secondary text-white form-control-sm"
+                  value="{{ item.get('category','') }}" placeholder="Correct category for item {{ i }}" />
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+
+          <hr class="border-secondary my-4" />
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-warning fw-bold px-4">
+              <i class="bi bi-save me-1"></i>Save Changes
+            </button>
+            <a href="{{ url_for('admin.edit_course', course_id=course.id) }}" class="btn btn-outline-secondary">Cancel</a>
+            <a href="{{ url_for('admin.preview_course', course_id=course.id) }}" target="_blank"
+              class="btn btn-outline-info ms-auto">
+              <i class="bi bi-eye me-1"></i>Preview Course
+            </a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let questionCount = document.querySelectorAll('.question-block').length;
+
+function switchType() {
+  const type = document.getElementById('module-type').value;
+  ['lesson','quiz','scenario','dragdrop'].forEach(t => {
+    document.getElementById(`section-${t}`).classList.toggle('d-none', t !== type);
+  });
+}
+
+function addQuestion() {
+  questionCount++;
+  const tpl = document.getElementById('question-template').content.cloneNode(true);
+  const block = tpl.querySelector('.question-block');
+  block.dataset.qnum = questionCount;
+  block.querySelector('.qnum-label').textContent = questionCount;
+  block.querySelector('.q-text').name = `q${questionCount}_text`;
+  ['a','b','c','d'].forEach(k => {
+    block.querySelector(`.q-opt-${k}`).name = `q${questionCount}_opt_${k}`;
+  });
+  block.querySelector('.q-correct').name = `q${questionCount}_correct`;
+  block.querySelector('.q-explanation').name = `q${questionCount}_explanation`;
+  document.getElementById('questions-container').appendChild(block);
+}
+
+function renumberQuestions() {
+  document.querySelectorAll('.question-block').forEach((block, i) => {
+    const num = i + 1;
+    block.dataset.qnum = num;
+    block.querySelector('.qnum-label').textContent = num;
+    block.querySelector('.q-text').name = `q${num}_text`;
+    ['a','b','c','d'].forEach(k => {
+      block.querySelector(`.q-opt-${k}`).name = `q${num}_opt_${k}`;
+    });
+    block.querySelector('.q-correct').name = `q${num}_correct`;
+    block.querySelector('.q-explanation').name = `q${num}_explanation`;
+  });
+  questionCount = document.querySelectorAll('.question-block').length;
+}
+</script>
+{% endblock %}

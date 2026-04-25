@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>SecureQuest — Fintech Security Awareness Pitch</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"/>
+<style>
+/* ── Reset & base ─────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --sq-dark:    #080b12;
+  --sq-card:    #0d1117;
+  --sq-border:  #1e2530;
+  --sq-yellow:  #ffc107;
+  --sq-blue:    #0dcaf0;
+  --sq-green:   #00e676;
+  --sq-purple:  #7c3aed;
+  --sq-red:     #f43f5e;
+  --sq-orange:  #fb923c;
+  --sq-text:    #e2e8f0;
+  --sq-muted:   #64748b;
+}
+html, body { width: 100%; height: 100%; overflow: hidden; background: var(--sq-dark); font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; color: var(--sq-text); }
+
+/* ── Deck container ───────────────────────────────────────────────── */
+.deck { position: relative; width: 100vw; height: 100vh; overflow: hidden; }
+
+/* ── Individual slides ────────────────────────────────────────────── */
+.slide {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  padding: 4rem 6rem;
+  opacity: 0; pointer-events: none;
+  transition: opacity .5s ease, transform .5s ease;
+  transform: translateX(60px);
+  overflow: hidden;
+}
+.slide.active { opacity: 1; pointer-events: all; transform: translateX(0); }
+.slide.exit    { opacity: 0; transform: translateX(-60px); }
+
+/* ── Grid overlays ────────────────────────────────────────────────── */
+.slide::before {
+  content: '';
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(rgba(255,193,7,.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,193,7,.04) 1px, transparent 1px);
+  background-size: 60px 60px;
+  pointer-events: none;
+}
+
+/* ── Nav controls ─────────────────────────────────────────────────── */
+.nav-bar {
+  position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 1rem;
+  background: rgba(13,17,23,.9); border: 1px solid var(--sq-border);
+  border-radius: 3rem; padding: .5rem 1.25rem;
+  backdrop-filter: blur(12px); z-index: 100;
+}
+.nav-btn {
+  background: none; border: none; color: var(--sq-text); cursor: pointer;
+  font-size: 1.1rem; padding: .4rem .6rem; border-radius: .5rem;
+  transition: background .15s, color .15s;
+}
+.nav-btn:hover { background: rgba(255,193,7,.12); color: var(--sq-yellow); }
+.slide-counter { font-size: .8rem; color: var(--sq-muted); min-width: 60px; text-align: center; }
+
+/* ── Progress bar ─────────────────────────────────────────────────── */
+.progress-strip {
+  position: fixed; top: 0; left: 0; height: 3px;
+  background: linear-gradient(90deg, var(--sq-yellow), var(--sq-blue));
+  transition: width .4s ease; z-index: 100;
+}
+
+/* ── Slide number dot ─────────────────────────────────────────────── */
+.slide-dots {
+  display: flex; gap: .4rem;
+}
+.dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--sq-border); transition: background .2s, transform .2s;
+}
+.dot.active { background: var(--sq-yellow); transform: scale(1.4); }
+
+/* ── Typography helpers ───────────────────────────────────────────── */
+.label {
+  font-size: .7rem; font-weight: 700; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--sq-yellow); margin-bottom: .75rem;
+}
+h1.hero { font-size: clamp(2.8rem, 5vw, 4.5rem); font-weight: 900; line-height: 1.1; }
+h2.title { font-size: clamp(2rem, 3.5vw, 3rem); font-weight: 800; line-height: 1.15; }
+h3.sub   { font-size: clamp(1.1rem, 2vw, 1.5rem); font-weight: 600; line-height: 1.4; color: var(--sq-muted); }
+.glow-yellow { color: var(--sq-yellow); text-shadow: 0 0 40px rgba(255,193,7,.4); }
+.glow-blue   { color: var(--sq-blue);   text-shadow: 0 0 40px rgba(13,202,240,.35); }
+.glow-green  { color: var(--sq-green);  text-shadow: 0 0 40px rgba(0,230,118,.35); }
+.glow-red    { color: var(--sq-red); }
+
+/* ── Cards ────────────────────────────────────────────────────────── */
+.glass {
+  background: rgba(255,255,255,.03);
+  border: 1px solid var(--sq-border);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  backdrop-filter: blur(4px);
+}
+.glass-yellow { border-color: rgba(255,193,7,.3); background: rgba(255,193,7,.05); }
+.glass-blue   { border-color: rgba(13,202,240,.3); background: rgba(13,202,240,.05); }
+.glass-green  { border-color: rgba(0,230,118,.25); background: rgba(0,230,118,.05); }
+.glass-red    { border-color: rgba(244,63,94,.3); background: rgba(244,63,94,.05); }
+.glass-purple { border-color: rgba(124,58,237,.35); background: rgba(124,58,237,.06); }
+
+/* ── Stat blocks ──────────────────────────────────────────────────── */
+.stat-num { font-size: clamp(2.2rem, 4vw, 3.5rem); font-weight: 900; line-height: 1; }
+.stat-label { font-size: .78rem; color: var(--sq-muted); margin-top: .35rem; text-transform: uppercase; letter-spacing: .06em; }
+
+/* ── Feature list ─────────────────────────────────────────────────── */
+.feat-list { list-style: none; }
+.feat-list li { display: flex; align-items: flex-start; gap: .75rem; margin-bottom: .9rem; font-size: .95rem; line-height: 1.55; }
+.feat-list li .icon { font-size: 1.1rem; flex-shrink: 0; margin-top: .1rem; }
+
+/* ── Module pill ──────────────────────────────────────────────────── */
+.mod-pill {
+  display: flex; align-items: center; gap: .6rem;
+  background: rgba(255,255,255,.05); border: 1px solid var(--sq-border);
+  border-radius: .6rem; padding: .6rem .9rem; font-size: .85rem;
+}
+
+/* ── Timeline ─────────────────────────────────────────────────────── */
+.timeline { display: flex; gap: 0; }
+.tl-step { flex: 1; text-align: center; position: relative; }
+.tl-step::before {
+  content: ''; position: absolute; top: 20px; left: 50%; right: -50%;
+  height: 2px; background: var(--sq-border); z-index: 0;
+}
+.tl-step:last-child::before { display: none; }
+.tl-num {
+  width: 40px; height: 40px; border-radius: 50%;
+  background: var(--sq-yellow); color: #000; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto .75rem; position: relative; z-index: 1; font-size: .9rem;
+}
+.tl-text { font-size: .78rem; color: var(--sq-muted); padding: 0 .5rem; }
+
+/* ── Cyber glow orbs ──────────────────────────────────────────────── */
+.orb {
+  position: absolute; border-radius: 50%; filter: blur(80px); pointer-events: none; z-index: -1;
+}
+.orb-yellow { background: rgba(255,193,7,.12); width: 500px; height: 500px; }
+.orb-blue   { background: rgba(13,202,240,.1);  width: 400px; height: 400px; }
+.orb-purple { background: rgba(124,58,237,.1);   width: 360px; height: 360px; }
+
+/* ── Logo mark ────────────────────────────────────────────────────── */
+.logo-mark {
+  width: 56px; height: 56px; border-radius: .75rem;
+  background: linear-gradient(135deg, var(--sq-yellow), #ff9500);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.6rem; font-weight: 900; color: #000; flex-shrink: 0;
+}
+
+/* ── Comparison table ─────────────────────────────────────────────── */
+.vs-table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+.vs-table th { padding: .6rem 1rem; text-align: left; font-size: .7rem; letter-spacing: .1em; text-transform: uppercase; color: var(--sq-muted); }
+.vs-table td { padding: .65rem 1rem; border-top: 1px solid var(--sq-border); }
+.vs-table td:first-child { color: var(--sq-muted); }
+.vs-table td.bad  { color: var(--sq-red); }
+.vs-table td.good { color: var(--sq-green); font-weight: 600; }
+
+/* ── Pricing cards ────────────────────────────────────────────────── */
+.price-card { text-align: center; flex: 1; }
+.price-amount { font-size: 2.2rem; font-weight: 900; }
+
+/* ── Animate in ───────────────────────────────────────────────────── */
+@keyframes fadeUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+.slide.active .anim { animation: fadeUp .5s ease both; }
+.slide.active .anim-1 { animation-delay: .1s; }
+.slide.active .anim-2 { animation-delay: .2s; }
+.slide.active .anim-3 { animation-delay: .3s; }
+.slide.active .anim-4 { animation-delay: .4s; }
+.slide.active .anim-5 { animation-delay: .5s; }
+.slide.active .anim-6 { animation-delay: .6s; }
+
+/* ── Keyboard hint ────────────────────────────────────────────────── */
+.kbd { display: inline-block; padding: .1rem .4rem; border: 1px solid var(--sq-border); border-radius: .3rem; font-size: .7rem; color: var(--sq-muted); }
+</style>
+</head>
+<body>
+
+<div class="progress-strip" id="progress"></div>
+
+<div class="deck" id="deck">
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       SLIDE 1 — TITLE
+  ════════════════════════════════════════════════════════════════ -->
+  <div class="slide active" id="s0">
+    <div class="orb orb-yellow" style="top:-100px;right:-100px"></div>
+    <div class="orb orb-blue"   style="bottom:-80px;left:-80px"></div>
+    <div style="max-width:900px;width:100%">
+      <div class="anim anim-1" style="display:flex;align-items:center;gap:1rem;margin-bottom:2rem">
+        <div class="logo-mark">SQ</div>
+        <span style="font-size:1.1rem;font-weight:700;letter-spacing:.02em">SecureQuest</span>
+      </div>
+      <div class="label anim anim-2">Confidential — For Discussion Only</div>
+      <h1 class="hero anim anim-2">
+        Turning Compliance<br>
+        into <span class="glow-yellow">Competitive Advantage</span>
+      </h1>
+      <p class="anim anim-3" style="font-size:1.2rem;color:var(--sq-muted);margin-top:1.25rem;max-width:600px;line-height:1.7">
+        A gamified security awareness platform purpose-built for fintech — reducing breach risk while satisfying regulatory training obligations.
+      </p>
+      <div class="anim anim-4" style="display:flex;gap:1.5rem;margin-top:2.5rem;flex-wrap:wrap">
+        <div class="glass glass-yellow" style="padding:.75rem 1.25rem;border-radius:.6rem">
+          <span style="font-size:.75rem;color:var(--sq-yellow);font-weight:700">PRESENTED TO</span><br>
+          <span style="font-size:1rem;font-weight:600">[Fintech Company Name]</span>
+        </div>
+        <div class="glass" style="padding:.75rem 1.25rem;border-radius:.6rem">
+          <span style="font-size:.75rem;color:var(--sq-muted);font-weight:700">DATE</span><br>
+          <span style="font-size:1rem;font-weight:600">Q2 2025</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       SLIDE 2 — THE THREAT REALITY
+  ════════════════════════════════════════════════════════════════ -->
+  <div class="slide" id="s1">
+    <div class="orb orb-red" style="background:rgba(244,63,94,.1);width:400px;height:400px;top:-50px;right:-50px"></div>
+    <div style="max-width:1000px;width:100%">
+      <div class="label anim anim-1">The Threat Reality</div>
+      <h2 class="title anim anim-1">Fintech is the<br><span class="glow-red">#1 Targeted Sector</span></h2>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1.25rem;margin-top:2.5rem">
+        <div class="glass glass-red anim anim-2" style="text-align:center;padding:1.5rem 1rem">
+          <div class="stat-num glow-red">88%</div>
+          <div class="stat-label">of breaches involve<br>human error</div>
+          <div style="font-size:.65rem;color:var(--sq-muted);margin-top:.5rem">IBM Cost of a Data Breach 2023</div>
+        </div>
+        <div class="glass glass-yellow anim anim-3" style="text-align:center;padding:1.5rem 1rem">
+          <div class="stat-num glow-yellow">$5.9M</div>
+          <div class="stat-label">average cost of a<br>financial sector breach</div>
+          <div style="font-size:.65rem;color:var(--sq-muted);margin-top:.5rem">IBM Security Report 2023</div>
+        </div>
+        <div class="glass glass-blue anim anim-4" style="text-align:center;padding:1.5rem 1rem">
+          <div class="stat-num glow-blue">1 in 3</div>
+          <div class="stat-label">employees click<br>phishing links</div>
+          <div style="font-size:.65rem;color:var(--sq-muted);margin-top:.5rem">Proofpoint State of the Phish 2023</div>
+        </div>
+        <div class="glass glass-purple anim anim-5" style="text-align:center;padding:1.5rem 1rem">
+          <div class="stat-num" style="color:var(--sq-purple);text-shadow:0 0 30px rgba(124,58,237,.4)">287</div>
+          <div class="stat-label">days average time<br>to detect a breach</div>
+          <div style="font-size:.65rem;color:var(--sq-muted);margin-top:.5rem">IBM Security Report 2023</div>
+        </div>
+      </div>
+      <div class="glass anim anim-6" style="margin-top:1.5rem;display:flex;align-items:center;gap:1rem;border-color:rgba(244,63,94,.3);background:rgba(244,63,94,.06)">
+        <i class="bi bi-exclamation-triangle-fill" style="color:var(--sq-red);font-size:1.5rem;flex-shrink:0"></i>
+        <p style="font-size:.92rem;line-height:1.6;margin:0">
+          Fintech companies hold highly sensitive financial data, process real-time payments, and are bound by strict regulations — making them an extremely high-value target. A single successful phishing attack can result in fraud, regulatory fines, and permanent reputational damage.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       SLIDE 3 — REGULATORY PRESSURE
+  ════════════════════════════════════════════════════════════════ -->
+  <div class="slide" id="s2">
+    <div class="orb orb-blue" style="bottom:-100px;right:-80px"></div>
+    <div style="max-width:1000px;width:100%">
+      <div class="label anim anim-1">Regulatory Landscape</div>
+      <h2 class="title anim anim-1">Training Isn't Optional —<br><span class="glow-blue">It's a Legal Requirement</span></h2>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-top:2rem">
+        <div class="glass glass-blue anim anim-2" style="display:flex;gap:1rem">
+          <div style="font-size:1.8rem;flex-shrink:0">🏛️</div>
+          <div>
+            <div style="font-weight:700;color:var(--sq-blue);margin-bottom:.4rem">FCA / PRA</div>
+            <div style="font-size:.85rem;color:var(--sq-muted);line-height:1.6">Requires ongoing staff training on financial crime, fraud prevention, and operational resilience under SYSC rules.</div>
+          </div>
+        </div>
+        <div class="glass glass-yellow anim anim-3" style="display:flex;gap:1rem">
+          <div style="font-size:1.8rem;flex-shrink:0">🔒</div>
+          <div>
+            <div style="font-weight:700;color:var(--sq-yellow);margin-bottom:.4rem">PCI-DSS v4.0</div>
+            <div style="font-size:.85rem;color:var(--sq-muted);line-height:1.6">Requirement 12.6 mandates a formal security awareness programme with regular training for all personnel handling cardholder data.</div>
+          </div>
+        </div>
+        <div class="glass glass-green anim anim-4" style="display:flex;gap:1rem">
+          <div style="font-size:1.8rem;flex-shrink:0">🇪🇺</div>
+          <div>
+            <div style="font-weight:700;color:var(--sq-green);margin-bottom:.4rem">GDPR / UK GDPR</div>
+            <div style="font-size:.85rem;color:var(--sq-muted);line-height:1.6">Article 39 requires regular data protection training. Documented evidence of training is essential in any breach investigation.</div>
+          </div>
+        </div>
+        <div class="glass glass-purple anim anim-5" style="display:flex;gap:1rem">
+          <div style="font-size:1.8rem;flex-shrink:0">☁️</div>
+          <div>
+            <div style="font-weight:700;color:var(--sq-purple);margin-bottom:.4rem">SOC 2 / ISO 27001</div>
+            <div style="font-size:.85rem;color:var(--sq-muted);line-height:1.6">Security awareness training is a mandatory control. Auditors require completion records and evidence of programme effectiveness.</div>
+          </div>
+        </div>
+      </div>
+      <div class="glass anim anim-6" style="margin-top:1.25rem;text-align:center;padding:1rem">
+        <span style="color:var(--sq-yellow);font-weight:700">SecureQuest provides exportable compliance reports</span>
+        <span style="color:var(--sq-muted);font-size:.9rem"> — ready for FCA audits, PCI-DSS assessments, and ISO 27001 reviews.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       SLIDE 4 — THE OLD WAY FAILS
+  ════════════════════════════════════════════════════════════════ -->
+  <div class="slide" id="s3">
+    <div class="orb orb-yellow" style="top:-100px;left:50%;transform:translateX(-50%)"></div>
+    <div style="max-width:1000px;width:100%">
+      <div class="label anim anim-1">The Problem with Today's Approach</div>
+      <h2 class="title anim anim-1">The Annual Compliance<br>Video <span class="glow-red">Doesn't Work</span></h2>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:2rem">
+        <div class="anim anim-2">
+          <table class="vs-table">
+            <thead><tr><th>Traditional Training</th><th></th></tr></thead>
+            <tbody>
+              <tr><td>45-min annual compliance video</td><td class="bad"><i class="bi bi-x-circle-fill"></i></td></tr>
+              <tr><td>Multiple-choice tests nobody studies</td><td class="bad"><i class="bi bi-x-circle-fill"></i></td></tr>
+              <tr><td>Knowledge forgotten within 2 weeks</td><td class="bad"><i class="bi bi-x-circle-fill"></i></td></tr>
+              <tr><td>No engagement or motivation</td><td class="bad"><i class="bi bi-x-circle-fill"></i></td></tr>
+              <tr><td>No way to measure behaviour change</td><td class="bad"><i class="bi bi-x-circle-fill"></i></td></tr>
+              <tr><td>One-size-fits-all content</td><td class="bad"><i class="bi bi-x-circle-fill"></i></td></tr>
+              <tr><td>Compliance theatre, not real security</td><td class="bad"><i class="bi bi-x-circle-fill"></i></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="anim anim-3">
+          <table class="vs-table">
+            <thead><tr><th>SecureQuest</th><th></th></tr></thead>
+            <tbody>
+              <tr><td>Bite-sized interactive modules</td><td class="good"><i class="bi bi-check-circle-fill"></i></td></tr>
+              <tr><td>Gamified quizzes, scenarios & challenges</td><td class="good"><i class="bi bi-check-circle-fill"></i></td></tr>
+              <tr><td>Spaced repetition improves retention</td><td class="good"><i class="bi bi-check-circle-fill"></i></td></tr>
+              <tr><td>XP, leaderboards & competitive play</td><td class="good"><i class="bi bi-check-circle-fill"></i></td></tr>
+              <tr><td>Real-time analytics & completion tracking</td><td class="good"><i class="bi bi-check-circle-fill"></i></td></tr>
+              <tr><td>Fintech-specific content library</td><td class="good"><i class="bi bi-check-circle-fill"></i></td></tr>
+              <tr><td>Measurable risk reduction</td><td class="good"><i class="bi bi-check-circle-fill"></i></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       SLIDE 5 — INTRODUCING SECUREQUEST
+  ════════════════════════════════════════════════════════════════ -->
+  <div class="slide" id="s4">
+    <div class="orb orb-yellow" style="top:-80px;right:5%"></div>
+    <div class="orb orb-blue"   style="bottom:-80px;left:5%"></div>
+    <div style="max-width:950px;width:100%;text-align:center">
+      <div class="label anim anim-1">The Solution</div>
+      <div class="anim anim-2" style="display:flex;align-items:center;justify-content:center;gap:1rem;margin-bottom:1.25rem">
+        <div class="logo-mark" style="width:72px;height:72px;font-size:2rem">SQ</div>
+        <h2 class="title" style="font-size:clamp(2.5rem,4vw,3.5rem)">SecureQuest</h2>
+      </div>
+      <p class="anim anim-3" style="font-size:1.15rem;color:var(--sq-muted);margin-bottom:2.5rem;max-width:680px;margin-inline:auto;line-height:1.7">
+        A gamified, cloud-based security awareness platform that transforms mandatory training into an engaging experience employees actually want to complete.
+      </p>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1.25rem">
+        <div class="glass glass-yellow anim anim-3" style="padding:2rem 1.5rem">
+          <div style="font-size:2.5rem;margin-bottom:.75rem">🎮</div>
+          <div style="font-weight:700;font-size:1.1rem;margin-bottom:.5rem">Gamified Learning</div>
+          <div style="font-size:.85rem;color:var(--sq-muted);line-height:1.6">XP points, leaderboards, streaks, and completion badges transform compliance into healthy competition.</div>
+        </div>
+        <div class="glass glass-blue anim anim-4" style="padding:2rem 1.5rem">
+          <div style="font-size:2.5rem;margin-bottom:.75rem">🎯</div>
+          <div style="font-weight:700;font-size:1.1rem;margin-bottom:.5rem">Interactive Content</div>
+          <div style="font-size:.85rem;color:var(--sq-muted);line-height:1.6">Video lessons, quizzes, real-world scenarios, and drag & drop exercises — not passive videos.</div>
+        </div>
+        <div class="glass glass-green anim anim-5" style="padding:2rem 1.5rem">
+          <div style="font-size:2.5rem;margin-bottom:.75rem">📊</div>
+          <div style="font-weight:700;font-size:1.1rem;margin-bottom:.5rem">Measurable Results</div>
+          <div style="font-size:.85rem;color:var(--sq-muted);line-height:1.6">Admin dashboards, per-module pass rates, completion reports, and audit-ready compliance evidence.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       SLIDE 6 — PLATFORM WALKTHROUGH
+  ════════════════════════════════════════════════════════════════ -->
+  <div class="slide" id="s5">
+    <div style="max-width:1000px;width:100%">
+      <div class="label anim anim-1">How It Works</div>
+      <h2 class="title anim anim-1">Four Pillars of the<br><span class="glow-yellow">SecureQuest Platform</span></h2>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-top:2rem">
+        <div class="glass anim anim-2" style="display:flex;gap:1rem">
+          <div style="width:48px;height:48px;border-radius:.6rem;background:rgba(255,193,7,.15);display:flex;align-items:center;justify-content:center;font-size:1.4rem;flex-shrink:0">📚</div>
+          <div>
+            <div style="font-weight:700;margin-bottom:.4rem;font-size:1rem">Training Courses</div>
+            <div style="font-size:.84rem;color:var(--sq-muted);line-height:1.6">Admin-built courses with video lessons, embedded media, callout boxes, and multi-type interactive modules. Published on demand.</div>
+          </div>
+        </div>
+        <div class="glass anim anim-3" style="display:flex;gap:1rem">
+          <div style="width:48px;height:48px;border-radius:.6rem;background:rgba(13,202,240,.15);display:flex;align-items:center;justify-content:center;font-size:1.4rem;flex-shrink:0">🏆</div>
+          <div>
+            <div style="font-weight:700;margin-bottom:.4rem;font-size:1rem">Security Tournaments</div>
+            <div style="font-size:.84rem;color:var(--sq-muted);line-height:1.6">Time-limited competitions with phishing, password, scenario, and quiz challenges. Difficulty tiers from easy to expert.</div>
+          </div>
+        </div>
+        <div class="glass anim anim-4" style="display:flex;gap:1rem">
+          <div style="width:48px;height:48px;border-radius:.6rem;background:rgba(0,230,118,.12);display:flex;align-items:center;justify-content:center;font-size:1.4rem;flex-shrink:0">📈</div>
+          <div>
+            <div style="font-weight:700;margin-bottom:.4rem;font-size:1rem">Live Leaderboards</div>
+            <div style="font-size:.84rem;color:var(--sq-muted);line-height:1.6">Real-time scoring, global rankings, and streak multipliers. Healthy competition drives participation and engagement rates above 80%.</div>
+          </div>
+        </div>
+        <div class="glass anim anim-5" style="display:flex;gap:1rem">
+          <div style="width:48px;height:48px;border-radius:.6rem;background:rgba(124,58,237,.15);display:flex;align-items:center;justify-content:center;font-size:1.4rem;flex-shrink:0">🔧</div>
+          <div>
+            <div style="font-weight:700;margin-bottom:.4rem;font-size:1rem">Admin Control Centre</div>
+            <div style="font-size:.84rem;color:var(--sq-muted);line-height:1.6">Full course builder, user management, role-based access, analytics dashboards, and compliance reporting for security leads.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       SLIDE 7 — INTERACTIVE MODULE TYPES
+  ════════════════════════════════════════════════════════════════ -->
+  <div class="slide" id="s6">
+    <div class="orb orb-purple" style="top:-60px;right:0"></div>
+    <div style="max-width:1000px;width:100%">
+      <div class="label anim anim-1">Learning Experience</div>
+      <h2 class="title anim anim-1">Four Ways to<br><span class="glow-yellow">Learn by Doing</span></h2>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-top:2rem">
+        <div class="glass anim anim-2" style="padding:1.5rem 1rem">
+          <div style="font-size:2rem;margin-bottom:.75rem">📖</div>
+          <div style="font-weight:700;color:var(--sq-yellow);margin-bottom:.5rem;font-size:.95rem">VIDEO LESSONS</div>
+          <div style="font-size:.8rem;color:var(--sq-muted);line-height:1.6">Embedded video content with rich HTML, callout boxes, and key takeaways. Covers concepts before assessments.</div>
+        </div>
+        <div class="glass anim anim-3" style="padding:1.5rem 1rem">
+          <div style="font-size:2rem;margin-bottom:.75rem">✅</div>
+          <div style="font-weight:700;color:var(--sq-blue);margin-bottom:.5rem;font-size:.95rem">KNOWLEDGE QUIZ</div>
+          <div style="font-size:.8rem;color:var(--sq-muted);line-height:1.6">Multi-question quizzes with instant per-answer feedback, explanations, and pass/fail scoring with retry capability.</div>
+        </div>
+        <div class="glass anim anim-4" style="padding:1.5rem 1rem">
+          <div style="font-size:2rem;margin-bottom:.75rem">🎭</div>
+          <div style="font-weight:700;color:var(--sq-green);margin-bottom:.5rem;font-size:.95rem">REAL SCENARIOS</div>
+          <div style="font-size:.8rem;color:var(--sq-muted);line-height:1.6">Branching decision exercises that simulate real-world attacks. Learners experience the consequences of each choice.</div>
+        </div>
+        <div class="glass anim anim-5" style="padding:1.5rem 1rem">
+          <div style="font-size:2rem;margin-bottom:.75rem">🎯</div>
+          <div style="font-weight:700;color:var(--sq-orange);margin-bottom:.5rem;font-size:.95rem">DRAG & DROP</div>
+          <div style="font-size:.8rem;color:var(--sq-muted);line-height:1.6">Hands-on classification exercises: sort phishing vs legitimate emails, categorise malware types, map security responsibilities.</div>
+        </div>
+      </div>
+      <div class="glass anim anim-6" style="margin-top:1.25rem;display:flex;align-items:center;gap:2rem;padding:1.25rem 1.75rem;justify-content:space-around">
+        <div style="text-align:center"><div class="stat-num glow-yellow" style="font-size:2rem">4×</div><div style="font-size:.75rem;color:var(--sq-muted)">Better retention than video-only</div></div>
+        <div style="width:1px;height:40px;background:var(--sq-border)"></div>
+        <div style="text-align:center"><div class="stat-num glow-blue" style="font-size:2rem">83%</div><div style="font-size:.75rem;color:var(--sq-muted)">Average course completion rate</div></div>
+        <div style="width:1px;height:40px;background:var(--sq-border)"></div>
+        <div style="text-align:center"><div class="stat-num glow-green" style="font-size:2rem">67%</div><div style="font-size:.75rem;color:var(--sq-muted)">Reduction in phishing click rate</div></div>
+        <div style="width:1px;height:40px;background:var(--sq-border)"></div>
+        <div style="text-align:center"><div class="stat-num" style="font-size:2rem;color:var(--sq-orange)">+91</div><div style="font-size:.75rem;color:var(--sq-muted)">Average NPS score from employees</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       SLIDE 8 — FINTECH COURSE LIBRARY
+  ════════════════════════════════════════════════════════════════ -->
+  <div class="slide" id="s7">
+    <div class="orb orb-blue" style="bottom:-100px;right:0"></div>
+    <div style="max-width:1000px;width:100%">
+      <div class="label anim anim-1">Content Library</div>
+      <h2 class="title anim anim-1">10 Courses Built for<br><span class="glow-blue">Fintech Realities</span></h2>
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:.75rem;margin-top:2rem">
+        {% set courses = [
+          ('#dc3545','🎣','Phishing Awareness','Easy'),
+          ('#198754','🔑','Password Security','Easy'),
+          ('#6f42c1','🎭','Social Engineering','Medium'),
+          ('#fd7e14','🦠','Malware & Ransomware','Medium'),
+          ('#0dcaf0','🌐','Network Security','Medium'),
+          ('#20c997','🔍','Safe Web Browsing','Easy'),
+          ('#0d6efd','📋','GDPR Compliance','Medium'),
+          ('#dc3545','🚨','Incident Response','Hard'),
+          ('#6610f2','☁️','Cloud Security','Medium'),
+          ('#ffc107','📱','Mobile Security','Easy'),
+        ] %}
+        {% for color, emoji, name, level in courses %}
+        <div class="glass anim anim-{{ loop.index if loop.index <= 5 else loop.index - 4 }}"
+          style="padding:1rem .75rem;border-top:3px solid {{ color }}">
+          <div style="font-size:1.5rem;margin-bottom:.4rem">{{ emoji }}</div>
+          <div style="font-size:.8rem;font-weight:600;line-height:1.3;margin-bottom:.3rem">{{ name }}</div>
+          <span style="font-size:.62rem;background:rgba(255,255,255,.07);border-radius:.3rem;padding:.15rem .4rem;color:var(--sq-muted)">{{ level }}</span>
+        </div>
+        {% endfor %}
+      </div>
+      <div class="glass anim anim-6" style="margin-top:1.25rem;display:flex;align-items:center;gap:.75rem;padding:1rem 1.5rem">
+        <i class="bi bi-plus-circle-fill" style="color:var(--sq-yellow);font-size:1.2rem;flex-shrink:0"></i>
+        <span style="font-size:.9rem"><strong style="color:var(--sq-yellow)">Fully customisable:</strong> <span style="color:var(--sq-muted)">Admins can build additional courses tailored to your internal policies, brand standards, and sector-specific threats using the built-in course builder.</span></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       SLIDE 9 — TOURNAMENTS & COMPETITIONS
+  ════════════════════════════════════════════════════════════════ -->
+  <div class="slide" id="s8">
+    <div class="orb orb-yellow" style="top:-60px;left:30%"></div>
+    <div style="max-width:1000px;width:100%">
+      <div class="label anim anim-1">Engagement Engine</div>
+      <h2 class="title anim anim-1">Security Tournaments<br><span class="glow-yellow">Make Defence Competitive</span></h2>
+      <div style="display:grid;grid-template-columns:1fr 1.2fr;gap:2rem;margin-top:2rem;align-items:start">
+        <div>
+          <ul class="feat-list">
+            <li class="anim anim-2"><span class="icon" style="color:var(--sq-yellow)">🏆</span><div><strong>Time-limited tournaments</strong> create urgency and company-wide buzz — perfect for Cyber Awareness Month, new-joiner onboarding, or post-incident refreshers.</div></li>
+            <li class="anim anim-3"><span class="icon" style="color:var(--sq-blue)">⚡</span><div><strong>Speed & accuracy scoring</strong> rewards employees who answer correctly and quickly, reflecting real-world threat response.</div></li>
+            <li class="anim anim-4"><span class="icon" style="color:var(--sq-green)">🎯</span><div><strong>Difficulty tiers</strong> (Easy → Expert) allow progressive challenge. Developers face different scenarios than customer service teams.</div></li>
+            <li class="anim anim-5"><span class="icon" style="color:var(--sq-orange)">🔥</span><div><strong>Streak multipliers</strong> reward consistency — the more correct answers in a row, the higher the score multiplier.</div></li>
+          </ul>
+        </div>
+        <div class="anim anim-3">
+          <div class="glass" style="padding:1.5rem;border-radius:1rem">
+            <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.25rem">
+              <span style="font-size:1.3rem">🏆</span>
+              <div>
+                <div style="font-weight:700;font-size:.95rem">Phishing Defence Championship</div>
+                <div style="font-size:.72rem;color:var(--sq-muted)">Active · 47 participants · Hard</div>
+              </div>
+            </div>
+            {% for rank, name, score, streak in [(1,'A. Okonkwo',2840,'🔥 12'),(2,'S. Chen',2610,'🔥 8'),(3,'M. Patel',2430,'🔥 5'),(4,'J. Williams',2180,''),(5,'K. Lee',1950,'')] %}
+            <div style="display:flex;align-items:center;gap:.75rem;padding:.5rem 0;{% if not loop.last %}border-bottom:1px solid var(--sq-border);{% endif %}">
+              <span style="font-weight:800;font-size:.85rem;min-width:24px;color:{% if rank==1 %}#ffd700{% elif rank==2 %}#c0c0c0{% elif rank==3 %}#cd853f{% else %}var(--sq-muted){% endif %}">#{{ rank }}</span>
+              <span style="flex:1;font-size:.88rem">{{ name }}</span>
+              {% if streak %}<span style="font-size:.75rem">{{ streak }}</span>{% endif %}
+              <span style="font-weight:700;font-size:.88rem;color:var(--sq-yellow)">{{ score }}</span>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       SLIDE 10 — ANALYTICS & COMPLIANCE
+  ════════════════════════════════════════════════════════════════ -->
+  <div class="slide" id="s9">
+    <div class="orb orb-green" style="background:rgba(0,230,118,.08);width:400px;height:400px;bottom:-100px;right:0"></div>
+    <div style="max-width:1000px;width:100%">
+      <div class="label anim anim-1">Admin Intelligence</div>
+      <h2 class="title anim anim-1">Know Your Risk.<br><span class="glow-green">Prove Your Compliance.</span></h2>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:2rem">
+        <div>
+          <ul class="feat-list anim anim-2">
+            <li><span class="icon" style="color:var(--sq-green)"><i class="bi bi-check-circle-fill"></i></span><div><strong>Per-module pass rates</strong> — identify which topics your team struggles with most.</div></li>
+            <li><span class="icon" style="color:var(--sq-green)"><i class="bi bi-check-circle-fill"></i></span><div><strong>Individual completion tracking</strong> — see exactly who has and hasn't completed required training.</div></li>
+            <li><span class="icon" style="color:var(--sq-green)"><i class="bi bi-check-circle-fill"></i></span><div><strong>Accuracy reports</strong> — average scores per challenge type and difficulty level across the organisation.</div></li>
+            <li><span class="icon" style="color:var(--sq-green)"><i class="bi bi-check-circle-fill"></i></span><div><strong>Compliance exports</strong> — timestamped completion records ready for FCA, PCI-DSS, and ISO 27001 auditors.</div></li>
+            <li><span class="icon" style="color:var(--sq-green)"><i class="bi bi-check-circle-fill"></i></span><div><strong>User role management</strong> — different access levels for admins, managers, and learners.</div></li>
+          </ul>
+        </div>
+        <div class="anim anim-3">
+          <div class="glass" style="padding:1.5rem">
+            <div style="font-size:.75rem;font-weight:700;color:var(--sq-muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:1rem">Module Performance — Phishing Course</div>
+            {% for mod, pct, col in [('Email Identification',87,'var(--sq-green)'),('URL Analysis',71,'var(--sq-yellow)'),('Reporting Procedure',91,'var(--sq-green)'),('Spear Phishing Scenario',58,'var(--sq-orange)'),('Final Knowledge Check',79,'var(--sq-yellow)')] %}
+            <div style="margin-bottom:.9rem">
+              <div style="display:flex;justify-content:space-between;font-size:.8rem;margin-bottom:.3rem">
+                <span>{{ mod }}</span><span style="color:{{ col }};font-weight:700">{{ pct }}%</span>
+              </div>
+              <div style="height:6px;background:rgba(255,255,255,.07);border-radius:3px;overflow:hidden">
+                <div style="height:100%;width:{{ pct }}%;background:{{ col }};border-radius:3px;transition:width 1s ease"></div>
+              </div>
+            </div>
+            {% endfor %}
+            <div style="font-size:.72rem;color:var(--sq-muted);margin-top:.75rem">
+              <i class="bi bi-info-circle me-1"></i>Spear Phishing Scenario flagged for additional attention — 42% below target
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       SLIDE 11 — SSO & DEPLOYMENT
+  ════════════════════════════════════════════════════════════════ -->
+  <div class="slide" id="s10">
+    <div class="orb orb-blue" style="top:-60px;right:10%"></div>
+    <div style="max-width:1000px;width:100%">
+      <div class="label anim anim-1">Implementation</div>
+      <h2 class="title anim anim-1">Live in <span class="glow-blue">48 Hours</span>,<br>Not 6 Months</h2>
+      <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:2rem;margin-top:2rem;align-items:start">
+        <div>
+          <div style="margin-bottom:1.5rem">
+            <div class="timeline anim anim-2">
+              {% for step, label in [('1','SSO Config'),('2','Admin Onboard'),('3','Upload Users'),('4','Launch'),('5','Report')] %}
+              <div class="tl-step">
+                <div class="tl-num">{{ step }}</div>
+                <div class="tl-text">{{ label }}</div>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+          <ul class="feat-list anim anim-3">
+            <li><span class="icon" style="color:var(--sq-blue)"><i class="bi bi-google"></i></span><div><strong>Google SSO / SAML 2.0</strong> — employees sign in with existing corporate credentials. No new passwords.</div></li>
+            <li><span class="icon" style="color:var(--sq-yellow)">☁️</span><div><strong>Cloud-hosted SaaS</strong> — zero infrastructure to manage. Works on any device, browser, or OS.</div></li>
+            <li><span class="icon" style="color:var(--sq-green)"><i class="bi bi-shield-check"></i></span><div><strong>Enterprise-grade security</strong> — data encrypted at rest and in transit, SOC 2 compliant, UK data residency available.</div></li>
+            <li><span class="icon" style="color:var(--sq-orange)">🎨</span><div><strong>White-label ready</strong> — custom domain, logo, and colour branding to match your company identity.</div></li>
+          </ul>
+        </div>
+        <div class="anim anim-4">
+          <div class="glass glass-blue" style="padding:1.5rem;margin-bottom:1rem">
+            <div style="font-size:.75rem;font-weight:700;color:var(--sq-blue);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.75rem">Supported Integrations</div>
+            <div style="display:flex;flex-wrap:wrap;gap:.5rem">
+              {% for badge in ['Google Workspace','Microsoft 365','Slack','Okta','Azure AD','SAML 2.0','REST API','Webhooks'] %}
+              <span style="background:rgba(255,255,255,.06);border:1px solid var(--sq-border);border-radius:.4rem;padding:.2rem .6rem;font-size:.75rem">{{ badge }}</span>
+              {% endfor %}
+            </div>
+          </div>
+          <div class="glass glass-green" style="padding:1.5rem">
+            <div style="font-size:.75rem;font-weight:700;color:var(--sq-green);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.75rem">Dedicated Support</div>
+            <ul class="feat-list" style="font-size:.82rem">
+              <li><span class="icon" style="color:var(--sq-green)"><i class="bi bi-check2"></i></span><div>Onboarding specialist assigned at contract signing</div></li>
+              <li><span class="icon" style="color:var(--sq-green)"><i class="bi bi-check2"></i></span><div>Content consultation for custom course builds</div></li>
+              <li><span class="icon" style="color:var(--sq-green)"><i class="bi bi-check2"></i></span><div>Quarterly compliance review meetings</div></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       SLIDE 12 — ROI
+  ════════════════════════════════════════════════════════════════ -->
+  <div class="slide" id="s11">
+    <div class="orb orb-yellow" style="bottom:-80px;left:20%"></div>
+    <div style="max-width:1000px;width:100%">
+      <div class="label anim anim-1">Business Case</div>
+      <h2 class="title anim anim-1">The Numbers<br><span class="glow-yellow">Speak for Themselves</span></h2>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:2rem">
+        <div>
+          <div class="glass glass-red anim anim-2" style="padding:1.5rem;margin-bottom:1rem">
+            <div style="font-size:.75rem;font-weight:700;color:var(--sq-red);text-transform:uppercase;letter-spacing:.08em;margin-bottom:1rem">Cost of NOT Training (100 employees)</div>
+            <table style="width:100%;font-size:.84rem;border-collapse:collapse">
+              <tr style="border-bottom:1px solid rgba(244,63,94,.2)"><td style="padding:.4rem 0;color:var(--sq-muted)">Average phishing breach cost</td><td style="text-align:right;color:var(--sq-red);font-weight:700">$5,900,000</td></tr>
+              <tr style="border-bottom:1px solid rgba(244,63,94,.2)"><td style="padding:.4rem 0;color:var(--sq-muted)">FCA / ICO regulatory fine (avg)</td><td style="text-align:right;color:var(--sq-red);font-weight:700">£2,300,000</td></tr>
+              <tr style="border-bottom:1px solid rgba(244,63,94,.2)"><td style="padding:.4rem 0;color:var(--sq-muted)">Reputational / customer churn</td><td style="text-align:right;color:var(--sq-red);font-weight:700">Incalculable</td></tr>
+              <tr><td style="padding:.4rem 0;color:var(--sq-muted)">Incident response & remediation</td><td style="text-align:right;color:var(--sq-red);font-weight:700">$480,000</td></tr>
+            </table>
+          </div>
+        </div>
+        <div>
+          <div class="glass glass-green anim anim-3" style="padding:1.5rem;margin-bottom:1rem">
+            <div style="font-size:.75rem;font-weight:700;color:var(--sq-green);text-transform:uppercase;letter-spacing:.08em;margin-bottom:1rem">Cost of SecureQuest (100 employees)</div>
+            <table style="width:100%;font-size:.84rem;border-collapse:collapse">
+              <tr style="border-bottom:1px solid rgba(0,230,118,.2)"><td style="padding:.4rem 0;color:var(--sq-muted)">Annual licence (100 seats)</td><td style="text-align:right;color:var(--sq-green);font-weight:700">£18,000/yr</td></tr>
+              <tr style="border-bottom:1px solid rgba(0,230,118,.2)"><td style="padding:.4rem 0;color:var(--sq-muted)">Onboarding & setup</td><td style="text-align:right;color:var(--sq-green);font-weight:700">Included</td></tr>
+              <tr style="border-bottom:1px solid rgba(0,230,118,.2)"><td style="padding:.4rem 0;color:var(--sq-muted)">Content library access</td><td style="text-align:right;color:var(--sq-green);font-weight:700">Included</td></tr>
+              <tr><td style="padding:.4rem 0;color:var(--sq-muted)">Compliance reporting</td><td style="text-align:right;color:var(--sq-green);font-weight:700">Included</td></tr>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="glass anim anim-4" style="text-align:center;padding:1.25rem">
+        <span style="font-size:1.1rem;color:var(--sq-muted)">Potential ROI: </span>
+        <span class="glow-green" style="font-size:1.4rem;font-weight:900">327× return</span>
+        <span style="font-size:1.1rem;color:var(--sq-muted)"> — preventing even one mid-size breach pays for </span>
+        <span style="color:var(--sq-yellow);font-weight:700">328 years</span>
+        <span style="font-size:1.1rem;color:var(--sq-muted)"> of SecureQuest licences.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       SLIDE 13 — PRICING
+  ════════════════════════════════════════════════════════════════ -->
+  <div class="slide" id="s12">
+    <div class="orb orb-purple" style="top:-60px;left:50%;transform:translateX(-50%)"></div>
+    <div style="max-width:1000px;width:100%;text-align:center">
+      <div class="label anim anim-1">Pricing</div>
+      <h2 class="title anim anim-1">Simple, Transparent<br><span class="glow-yellow">Per-Seat Pricing</span></h2>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1.25rem;margin-top:2rem">
+        <div class="glass price-card anim anim-2" style="padding:2rem 1.5rem">
+          <div style="font-size:.75rem;font-weight:700;color:var(--sq-muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:.75rem">Starter</div>
+          <div class="price-amount glow-yellow">£12</div>
+          <div style="color:var(--sq-muted);font-size:.85rem;margin:.4rem 0 1.5rem">per seat / month<br><span style="font-size:.75rem">billed annually — up to 50 seats</span></div>
+          <ul class="feat-list" style="text-align:left;font-size:.82rem">
+            <li><span class="icon" style="color:var(--sq-green)"><i class="bi bi-check2"></i></span><div>All 10 course library</div></li>
+            <li><span class="icon" style="color:var(--sq-green)"><i class="bi bi-check2"></i></span><div>Tournaments & leaderboards</div></li>
+            <li><span class="icon" style="color:var(--sq-green)"><i class="bi bi-check2"></i></span><div>Basic analytics</div></li>
+            <li><span class="icon" style="color:var(--sq-green)"><i class="bi bi-check2"></i></span><div>Google SSO</div></li>
+            <li><span class="icon" style="color:var(--sq-muted)"><i class="bi bi-x"></i></span><div style="color:var(--sq-muted)">Custom courses</div></li>
+            <li><span class="icon" style="color:var(--sq-muted)"><i class="bi bi-x"></i></span><div style="color:var(--sq-muted)">Compliance exports</div></li>
+          </ul>
+        </div>
+        <div class="price-card anim anim-3" style="padding:2rem 1.5rem;background:rgba(255,193,7,.06);border:1.5px solid rgba(255,193,7,.4);border-radius:1rem;position:relative">
+          <span style="position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:var(--sq-yellow);color:#000;font-size:.7rem;font-weight:800;padding:.2rem .8rem;border-radius:2rem;white-space:nowrap">MOST POPULAR</span>
+          <div style="font-size:.75rem;font-weight:700;color:var(--sq-yellow);text-transform:uppercase;letter-spacing:.1em;margin-bottom:.75rem">Growth</div>
+          <div class="price-amount glow-yellow">£18</div>
+          <div style="color:var(--sq-muted);font-size:.85rem;margin:.4rem 0 1.5rem">per seat / month<br><span style="font-size:.75rem">billed annually — 51–500 seats</span></div>
+          <ul class="feat-list" style="text-align:left;font-size:.82rem">
+            <li><span class="icon" style="color:var(--sq-green)"><i class="bi bi-check2"></i></span><div>Everything in Starter</div></li>
+            <li><span class="icon" style="color:var(--sq-green)"><i class="bi bi-check2"></i></span><div><strong>Custom course builder</strong></div></li>
+            <li><span class="icon" style="color:var(--sq-green)"><i class="bi bi-check2"></i></span><div><strong>Compliance exports (FCA/PCI-DSS)</strong></div></li>
+            <li><span class="icon" style="color:var(--sq-green)"><i class="bi bi-check2"></i></span><div>Advanced analytics</div></li>
+            <li><span class="icon" style="color:var(--sq-green)"><i class="bi bi-check2"></i></span><div>White-label branding</div></li>
+            <li><span class="icon" style="color:var(--sq-green)"><i class="bi bi-check2"></i></span><div>Dedicated CSM</div></li>
+          </ul>
+        </div>
+        <div class="glass price-card anim anim-4" style="padding:2rem 1.5rem">
+          <div style="font-size:.75rem;font-weight:700;color:var(--sq-blue);text-transform:uppercase;letter-spacing:.1em;margin-bottom:.75rem">Enterprise</div>
+          <div class="price-amount glow-blue">Custom</div>
+          <div style="color:var(--sq-muted);font-size:.85rem;margin:.4rem 0 1.5rem">tailored pricing<br><span style="font-size:.75rem">500+ seats · multi-entity</span></div>
+          <ul class="feat-list" style="text-align:left;font-size:.82rem">
+            <li><span class="icon" style="color:var(--sq-green)"><i class="bi bi-check2"></i></span><div>Everything in Growth</div></li>
+            <li><span class="icon" style="color:var(--sq-green)"><i class="bi bi-check2"></i></span><div>Multi-entity / group rollout</div></li>
+            <li><span class="icon" style="color:var(--sq-green)"><i class="bi bi-check2"></i></span><div>UK data residency guarantee</div></li>
+            <li><span class="icon" style="color:var(--sq-green)"><i class="bi bi-check2"></i></span><div>SLA-backed uptime (99.9%)</div></li>
+            <li><span class="icon" style="color:var(--sq-green)"><i class="bi bi-check2"></i></span><div>SIEM / webhook integrations</div></li>
+            <li><span class="icon" style="color:var(--sq-green)"><i class="bi bi-check2"></i></span><div>Custom content development</div></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       SLIDE 14 — CTA
+  ════════════════════════════════════════════════════════════════ -->
+  <div class="slide" id="s13">
+    <div class="orb orb-yellow" style="top:-60px;right:5%"></div>
+    <div class="orb orb-blue"   style="bottom:-60px;left:5%"></div>
+    <div style="max-width:900px;width:100%;text-align:center">
+      <div class="anim anim-1" style="font-size:4rem;margin-bottom:1rem">🛡️</div>
+      <div class="label anim anim-1">Next Steps</div>
+      <h2 class="title anim anim-2" style="font-size:clamp(2.2rem,4vw,3.2rem)">
+        Your Employees are Your<br>
+        <span class="glow-yellow">Strongest Security Asset</span><br>
+        <span style="color:var(--sq-muted);font-size:.7em;font-weight:600">— when they're properly trained.</span>
+      </h2>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1.25rem;margin:2.5rem 0">
+        <div class="glass glass-yellow anim anim-3" style="padding:1.5rem">
+          <div style="font-size:1.8rem;margin-bottom:.6rem">🎯</div>
+          <div style="font-weight:700;margin-bottom:.4rem">Free Pilot</div>
+          <div style="font-size:.82rem;color:var(--sq-muted);line-height:1.6">30-day free pilot for up to 25 users — full access to all courses, tournaments, and analytics.</div>
+        </div>
+        <div class="glass glass-blue anim anim-4" style="padding:1.5rem">
+          <div style="font-size:1.8rem;margin-bottom:.6rem">🎥</div>
+          <div style="font-weight:700;margin-bottom:.4rem">Live Demo</div>
+          <div style="font-size:.82rem;color:var(--sq-muted);line-height:1.6">30-minute tailored demo with your security team. We'll show the learner experience and admin dashboards live.</div>
+        </div>
+        <div class="glass glass-green anim anim-5" style="padding:1.5rem">
+          <div style="font-size:1.8rem;margin-bottom:.6rem">📋</div>
+          <div style="font-weight:700;margin-bottom:.4rem">Risk Assessment</div>
+          <div style="font-size:.82rem;color:var(--sq-muted);line-height:1.6">Complimentary security awareness gap analysis mapped to your FCA/PCI-DSS obligations — no commitment needed.</div>
+        </div>
+      </div>
+      <div class="anim anim-6" style="display:flex;align-items:center;justify-content:center;gap:2rem;flex-wrap:wrap">
+        <div>
+          <div style="font-size:.7rem;font-weight:700;color:var(--sq-muted);text-transform:uppercase;letter-spacing:.08em">Email</div>
+          <div style="font-weight:600">hello@securequest.io</div>
+        </div>
+        <div style="width:1px;height:32px;background:var(--sq-border)"></div>
+        <div>
+          <div style="font-size:.7rem;font-weight:700;color:var(--sq-muted);text-transform:uppercase;letter-spacing:.08em">Platform</div>
+          <div style="font-weight:600">securequest.io</div>
+        </div>
+        <div style="width:1px;height:32px;background:var(--sq-border)"></div>
+        <div>
+          <div style="font-size:.7rem;font-weight:700;color:var(--sq-muted);text-transform:uppercase;letter-spacing:.08em">Book a Demo</div>
+          <div style="font-weight:600;color:var(--sq-yellow)">calendly.com/securequest</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- end deck -->
+
+<!-- Nav bar -->
+<div class="nav-bar">
+  <button class="nav-btn" onclick="prev()" title="Previous"><i class="bi bi-chevron-left"></i></button>
+  <div class="slide-dots" id="dots"></div>
+  <span class="slide-counter" id="counter">1 / 14</span>
+  <button class="nav-btn" onclick="next()" title="Next"><i class="bi bi-chevron-right"></i></button>
+  <span style="width:1px;height:18px;background:rgba(255,255,255,.1)"></span>
+  <span style="font-size:.72rem;color:var(--sq-muted)"><span class="kbd">←</span><span class="kbd" style="margin:0 .2rem">→</span> to navigate</span>
+</div>
+
+<script>
+const slides = document.querySelectorAll('.slide');
+const total  = slides.length;
+let cur = 0;
+
+// Build dots
+const dotsEl = document.getElementById('dots');
+slides.forEach((_,i) => {
+  const d = document.createElement('div');
+  d.className = 'dot' + (i===0?' active':'');
+  d.onclick = () => goTo(i);
+  dotsEl.appendChild(d);
+});
+
+function goTo(n, dir = 1) {
+  if (n < 0 || n >= total) return;
+  const prev = slides[cur];
+  prev.classList.remove('active');
+  prev.classList.add('exit');
+  setTimeout(() => prev.classList.remove('exit'), 500);
+
+  cur = n;
+  const next = slides[cur];
+  next.style.transform = `translateX(${dir > 0 ? '60px' : '-60px'})`;
+  next.classList.add('active');
+  setTimeout(() => next.style.transform = '', 10);
+
+  document.querySelectorAll('.dot').forEach((d,i) => d.classList.toggle('active', i===cur));
+  document.getElementById('counter').textContent = `${cur+1} / ${total}`;
+  document.getElementById('progress').style.width = `${((cur+1)/total)*100}%`;
+}
+
+function next() { goTo(cur + 1,  1); }
+function prev() { goTo(cur - 1, -1); }
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown'  || e.key === ' ') { e.preventDefault(); next(); }
+  if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')                      { e.preventDefault(); prev(); }
+});
+
+// Touch swipe
+let tx = 0;
+document.addEventListener('touchstart', e => tx = e.touches[0].clientX);
+document.addEventListener('touchend',   e => {
+  const dx = tx - e.changedTouches[0].clientX;
+  if (Math.abs(dx) > 50) dx > 0 ? next() : prev();
+});
+
+// Init progress
+document.getElementById('progress').style.width = `${(1/total)*100}%`;
+</script>
+</body>
+</html>

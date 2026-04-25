@@ -1,0 +1,569 @@
+{% extends "base.html" %}
+{% block title %}Playing: {{ tournament.name }}{% endblock %}
+
+{% block content %}
+<!-- ══════════════════════════════════════════════════════════════════
+     HUD BAR
+═══════════════════════════════════════════════════════════════════ -->
+<div class="play-hud d-flex align-items-center gap-3 mb-3 flex-wrap">
+  <div class="hud-brand fw-bold text-warning me-2">
+    <i class="bi bi-shield-lock-fill me-1"></i>{{ tournament.name }}
+    <span class="badge difficulty-{{ tournament.difficulty }} ms-1">{{ tournament.difficulty | upper }}</span>
+  </div>
+
+  <!-- Progress -->
+  <div class="hud-progress flex-grow-1">
+    <div class="d-flex justify-content-between small text-muted mb-1">
+      <span>Challenge <span id="hud-current">1</span> of {{ challenges | length }}</span>
+      <span id="hud-pct">0%</span>
+    </div>
+    <div class="progress" style="height:8px;border-radius:4px">
+      <div class="progress-bar bg-warning" id="hud-bar" style="width:0%;transition:width .5s ease"></div>
+    </div>
+  </div>
+
+  <!-- Score -->
+  <div class="hud-score text-center px-3">
+    <div class="hud-label text-muted">SCORE</div>
+    <div class="hud-value text-warning fw-bold fs-4" id="hud-score">0</div>
+  </div>
+
+  <!-- Streak -->
+  <div class="hud-streak text-center px-3" id="streak-hud">
+    <div class="hud-label text-muted">STREAK</div>
+    <div class="hud-value fw-bold fs-4" id="hud-streak">0🔥</div>
+  </div>
+
+  <!-- Global timer -->
+  <div class="hud-timer text-center px-3">
+    <div class="hud-label text-muted">TIME LEFT</div>
+    <div class="hud-value fw-bold fs-4" id="global-timer">{{ (tournament.total_timer_seconds // 60) }}:00</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════
+     MAIN CHALLENGE AREA
+═══════════════════════════════════════════════════════════════════ -->
+<div id="challenge-area">
+  {% for c in challenges %}
+  <div class="challenge-slide {% if not loop.first %}d-none{% endif %}" id="slide-{{ loop.index0 }}" data-type="{{ c.type }}">
+
+    <!-- Per-challenge timer bar -->
+    <div class="challenge-timer-bar mb-3">
+      <div class="d-flex justify-content-between align-items-center mb-1">
+        <span class="badge type-badge-{{ c.type }}">
+          <i class="bi bi-{{ 'fish' if c.type=='phishing' else 'question-circle' if c.type=='quiz' else 'diagram-3' if c.type=='scenario' else 'key' }} me-1"></i>
+          {{ c.type | upper }}
+        </span>
+        <span class="challenge-clock fw-bold" id="clock-{{ c.id }}" data-secs="{{ tournament.timer_seconds }}">
+          <i class="bi bi-clock me-1"></i>{{ (tournament.timer_seconds // 60) }}:{{ '%02d'%(tournament.timer_seconds % 60) }}
+        </span>
+        <span class="badge bg-warning text-dark"><i class="bi bi-star-fill me-1"></i>{{ c.points }} pts</span>
+      </div>
+      <div class="progress" style="height:5px;border-radius:0">
+        <div class="progress-bar bg-success challenge-timer-fill" id="tfill-{{ c.id }}"
+          style="width:100%;transition:width 1s linear"></div>
+      </div>
+    </div>
+
+    <!-- ── PHISHING TYPE ──────────────────────────────────────────── -->
+    {% if c.type == 'phishing' %}
+    <div class="challenge-card card border-0 shadow-lg" style="background:#12161d">
+      <div class="card-body p-0">
+        <!-- Email client mock -->
+        <div class="email-client">
+          <div class="email-toolbar d-flex align-items-center gap-2 px-3 py-2">
+            <div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div>
+            <span class="text-muted small ms-2">Inbox — Mail</span>
+          </div>
+          <div class="email-header px-4 pt-3 pb-2">
+            <div class="fw-bold text-white fs-5">{{ c.title }}</div>
+            <div class="email-meta mt-2 p-2 rounded" style="background:rgba(255,255,255,.05)">
+              <div class="row g-1 small">
+                {% set lines = c.description.split('\n') %}
+                <div class="col-12 text-muted">{{ lines[0] if lines|length > 0 else '' }}</div>
+                <div class="col-12 text-muted">{{ lines[1] if lines|length > 1 else '' }}</div>
+              </div>
+            </div>
+          </div>
+          <div class="email-body px-4 py-3 text-light" style="font-family:monospace;font-size:.9rem;white-space:pre-wrap;max-height:260px;overflow-y:auto">
+{% set body_lines = c.description.split('\n') %}{% for bl in body_lines[2:] %}{{ bl }}
+{% endfor %}
+          </div>
+        </div>
+        <div class="px-4 pb-4 pt-2">
+          <p class="text-warning fw-semibold mb-3"><i class="bi bi-question-circle-fill me-2"></i>What should you do with this email?</p>
+          <div class="options-grid" id="opts-{{ c.id }}">
+            {% if c.options %}{% for key, val in c.options.items() %}
+            <button class="option-btn" data-value="{{ key }}" onclick="selectOption(this, '{{ c.id }}')">
+              <span class="option-key">{{ key | upper }}</span>
+              <span class="option-text">{{ val }}</span>
+            </button>
+            {% endfor %}{% endif %}
+          </div>
+          {% include 'main/_challenge_footer.html' %}
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SCENARIO TYPE ─────────────────────────────────────────── -->
+    {% elif c.type == 'scenario' %}
+    <div class="challenge-card card border-0 shadow-lg" style="background:#12161d">
+      <div class="card-body p-4">
+        <div class="scenario-header mb-4">
+          <div class="scenario-icon mb-3"><i class="bi bi-person-badge-fill text-info"></i></div>
+          <h5 class="fw-bold text-white">{{ c.title }}</h5>
+          <div class="scenario-body p-3 rounded mt-3" style="background:rgba(255,255,255,.05);border-left:3px solid #0dcaf0">
+            <p class="text-light mb-0" style="white-space:pre-line;line-height:1.8">{{ c.description }}</p>
+          </div>
+        </div>
+        <p class="text-warning fw-semibold mb-3"><i class="bi bi-arrow-right-circle-fill me-2"></i>Choose the best course of action:</p>
+        <div class="options-grid" id="opts-{{ c.id }}">
+          {% if c.options %}{% for key, val in c.options.items() %}
+          <button class="option-btn" data-value="{{ key }}" onclick="selectOption(this, '{{ c.id }}')">
+            <span class="option-key">{{ key | upper }}</span>
+            <span class="option-text">{{ val }}</span>
+          </button>
+          {% endfor %}{% endif %}
+        </div>
+        {% include 'main/_challenge_footer.html' %}
+      </div>
+    </div>
+
+    <!-- ── PASSWORD TYPE ─────────────────────────────────────────── -->
+    {% elif c.type == 'password' %}
+    <div class="challenge-card card border-0 shadow-lg" style="background:#12161d">
+      <div class="card-body p-4">
+        <h5 class="fw-bold text-white mb-2"><i class="bi bi-key-fill text-success me-2"></i>{{ c.title }}</h5>
+        <p class="text-light mb-4" style="white-space:pre-line">{{ c.description }}</p>
+        {% if c.options %}
+        <div class="options-grid" id="opts-{{ c.id }}">
+          {% for key, val in c.options.items() %}
+          <button class="option-btn password-option" data-value="{{ key }}" onclick="selectOption(this, '{{ c.id }}'); analyzePassword('{{ val }}', 'strength-{{ c.id }}')">
+            <span class="option-key">{{ key | upper }}</span>
+            <span class="option-text font-monospace">{{ val }}</span>
+          </button>
+          {% endfor %}
+        </div>
+        <!-- Live strength visualizer -->
+        <div class="strength-visualizer mt-4 p-3 rounded d-none" id="strength-{{ c.id }}" style="background:rgba(255,255,255,.05)">
+          <div class="d-flex justify-content-between small text-muted mb-1">
+            <span>Password Strength</span>
+            <span id="strength-label-{{ c.id }}">—</span>
+          </div>
+          <div class="progress mb-2" style="height:12px;border-radius:6px">
+            <div class="progress-bar" id="strength-bar-{{ c.id }}" style="width:0%;transition:width .4s ease"></div>
+          </div>
+          <div class="row g-1 small" id="strength-details-{{ c.id }}"></div>
+        </div>
+        {% else %}
+        <div class="mb-3">
+          <input type="text" class="form-control bg-secondary border-secondary text-white font-monospace"
+            id="text-input-{{ c.id }}" placeholder="Type the strongest password you can…"
+            oninput="analyzePasswordLive(this.value, 'strength-{{ c.id }}')" />
+        </div>
+        <div class="strength-visualizer mt-3 p-3 rounded" id="strength-{{ c.id }}" style="background:rgba(255,255,255,.05)">
+          <div class="d-flex justify-content-between small text-muted mb-1">
+            <span>Strength</span><span id="strength-label-{{ c.id }}">—</span>
+          </div>
+          <div class="progress mb-2" style="height:12px;border-radius:6px">
+            <div class="progress-bar" id="strength-bar-{{ c.id }}" style="width:0%"></div>
+          </div>
+          <div class="row g-1 small" id="strength-details-{{ c.id }}"></div>
+        </div>
+        {% endif %}
+        {% include 'main/_challenge_footer.html' %}
+      </div>
+    </div>
+
+    <!-- ── QUIZ TYPE (default) ───────────────────────────────────── -->
+    {% else %}
+    <div class="challenge-card card border-0 shadow-lg" style="background:#12161d">
+      <div class="card-body p-4">
+        <div class="quiz-icon mb-3"><i class="bi bi-patch-question-fill text-warning"></i></div>
+        <h5 class="fw-bold text-white mb-3">{{ c.title }}</h5>
+        <p class="text-light mb-4" style="line-height:1.8;white-space:pre-line">{{ c.description }}</p>
+        <div class="options-grid" id="opts-{{ c.id }}">
+          {% if c.options %}
+          {% for key, val in c.options.items() %}
+          <button class="option-btn" data-value="{{ key }}" onclick="selectOption(this, '{{ c.id }}')">
+            <span class="option-key">{{ key | upper }}</span>
+            <span class="option-text">{{ val }}</span>
+          </button>
+          {% endfor %}
+          {% else %}
+          <input type="text" class="form-control bg-secondary border-secondary text-white"
+            id="text-input-{{ c.id }}" placeholder="Type your answer…" />
+          {% endif %}
+        </div>
+        {% include 'main/_challenge_footer.html' %}
+      </div>
+    </div>
+    {% endif %}
+
+  </div><!-- .challenge-slide -->
+  {% endfor %}
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════
+     OVERLAY: Correct / Wrong feedback
+═══════════════════════════════════════════════════════════════════ -->
+<div id="feedback-overlay" class="feedback-overlay d-none">
+  <div class="feedback-inner">
+    <div id="feedback-icon" class="feedback-icon"></div>
+    <div id="feedback-title" class="feedback-title"></div>
+    <div id="feedback-pts" class="feedback-pts"></div>
+    <div id="feedback-streak" class="feedback-streak"></div>
+    <div id="feedback-explanation" class="feedback-explanation"></div>
+    <button class="btn btn-warning btn-lg mt-3 fw-bold px-5" onclick="nextChallenge()">
+      Continue <i class="bi bi-arrow-right ms-2"></i>
+    </button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════
+     OVERLAY: Tournament Complete
+═══════════════════════════════════════════════════════════════════ -->
+<div id="complete-overlay" class="feedback-overlay d-none" style="background:rgba(0,0,0,.97)">
+  <div class="feedback-inner text-center">
+    <div style="font-size:5rem">🏆</div>
+    <h2 class="text-warning fw-bold mt-2">Tournament Complete!</h2>
+    <div class="complete-stats my-4">
+      <div class="stat-pill"><span class="text-muted small">FINAL SCORE</span><span class="fs-2 fw-bold text-warning" id="final-score">0</span></div>
+      <div class="stat-pill"><span class="text-muted small">CORRECT</span><span class="fs-2 fw-bold text-success" id="final-correct">0</span></div>
+      <div class="stat-pill"><span class="text-muted small">BEST STREAK</span><span class="fs-2 fw-bold text-info" id="final-streak">0🔥</span></div>
+    </div>
+    <canvas id="confetti-canvas" style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999"></canvas>
+    <div class="d-flex gap-3 justify-content-center mt-2">
+      <a href="{{ url_for('main.tournament_detail', tournament_id=tournament.id) }}" class="btn btn-outline-warning btn-lg">
+        <i class="bi bi-bar-chart me-2"></i>View Leaderboard
+      </a>
+      <a href="{{ url_for('main.tournaments') }}" class="btn btn-warning btn-lg fw-bold">
+        <i class="bi bi-trophy me-2"></i>More Tournaments
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- Floating points animation container -->
+<div id="float-container" style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:500"></div>
+{% endblock %}
+
+<!-- ══════════════════════════════════════════════════════════════════
+     SCRIPTS
+═══════════════════════════════════════════════════════════════════ -->
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+<script>
+// ── State ──────────────────────────────────────────────────────────
+const CHALLENGES = {{ challenges | tojson }};
+const TOURNAMENT_ID = {{ tournament.id }};
+const TIMER_SECS = {{ tournament.timer_seconds }};
+const TOTAL_SECS = {{ tournament.total_timer_seconds }};
+
+let currentIdx = 0;
+let score = 0;
+let streak = 0;
+let bestStreak = 0;
+let correctCount = 0;
+let answered = {};       // challengeId → true
+let selectedVal = {};    // challengeId → selected option value
+let challengeStartTimes = {};
+let globalRemaining = TOTAL_SECS;
+let perTimerIntervals = {};
+let perTimerRemaining = {};
+
+// ── Global countdown ───────────────────────────────────────────────
+const globalTimerEl = document.getElementById('global-timer');
+const globalInterval = setInterval(() => {
+  globalRemaining--;
+  if (globalRemaining <= 0) {
+    clearInterval(globalInterval);
+    globalTimerEl.textContent = '0:00';
+    globalTimerEl.classList.add('text-danger');
+    return;
+  }
+  const m = Math.floor(globalRemaining / 60), s = globalRemaining % 60;
+  globalTimerEl.textContent = `${m}:${s.toString().padStart(2,'0')}`;
+  if (globalRemaining <= 60) globalTimerEl.classList.add('text-danger','pulse');
+}, 1000);
+
+// ── Per-challenge timer ────────────────────────────────────────────
+function startChallengeTimer(c) {
+  const clockEl = document.getElementById(`clock-${c.id}`);
+  const fillEl  = document.getElementById(`tfill-${c.id}`);
+  perTimerRemaining[c.id] = TIMER_SECS;
+  challengeStartTimes[c.id] = Date.now();
+
+  perTimerIntervals[c.id] = setInterval(() => {
+    perTimerRemaining[c.id]--;
+    const rem = perTimerRemaining[c.id];
+    if (rem <= 0) {
+      clearInterval(perTimerIntervals[c.id]);
+      clockEl.innerHTML = '<i class="bi bi-alarm-fill text-danger me-1"></i>Time up!';
+      clockEl.classList.add('text-danger');
+      fillEl.style.width = '0%';
+      fillEl.classList.replace('bg-success','bg-danger');
+      if (!answered[c.id]) autoSubmitTimeout(c.id);
+      return;
+    }
+    const m = Math.floor(rem / 60), s = rem % 60;
+    clockEl.innerHTML = `<i class="bi bi-clock me-1"></i>${m}:${s.toString().padStart(2,'0')}`;
+    fillEl.style.width = `${(rem / TIMER_SECS) * 100}%`;
+    if (rem <= TIMER_SECS * 0.33) {
+      fillEl.classList.replace('bg-success','bg-danger');
+      clockEl.classList.add('text-danger','pulse');
+    } else if (rem <= TIMER_SECS * 0.6) {
+      fillEl.classList.replace('bg-success','bg-warning');
+    }
+  }, 1000);
+}
+
+function stopChallengeTimer(cid) {
+  clearInterval(perTimerIntervals[cid]);
+}
+
+// ── Option selection ───────────────────────────────────────────────
+function selectOption(btn, cid) {
+  if (answered[cid]) return;
+  const container = document.getElementById(`opts-${cid}`);
+  container.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  selectedVal[cid] = btn.dataset.value;
+  const submitBtn = document.getElementById(`submit-btn-${cid}`);
+  if (submitBtn) { submitBtn.disabled = false; submitBtn.classList.replace('btn-secondary','btn-warning'); }
+}
+
+// ── Submit answer ──────────────────────────────────────────────────
+async function submitAnswer(cid) {
+  const c = CHALLENGES.find(ch => ch.id === cid);
+  if (!c || answered[cid]) return;
+
+  const textInput = document.getElementById(`text-input-${cid}`);
+  const response = selectedVal[cid] || (textInput ? textInput.value.trim() : '');
+  if (!response) { flashBtnWarning(cid, 'Pick an answer first!'); return; }
+
+  const elapsed = Math.round((Date.now() - (challengeStartTimes[cid] || Date.now())) / 1000);
+  stopChallengeTimer(cid);
+  answered[cid] = true;
+
+  const btn = document.getElementById(`submit-btn-${cid}`);
+  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>'; }
+
+  const fd = new FormData();
+  fd.append('challenge_id', cid);
+  fd.append('response', response);
+  fd.append('time_taken_seconds', elapsed);
+
+  const resp = await fetch(`/tournaments/${TOURNAMENT_ID}/submit`, { method:'POST', body:fd });
+  const result = await resp.json();
+
+  // Mark selected option correct/wrong visually
+  markOptions(cid, result.is_correct ? response : response, result.correct_answer);
+
+  if (result.is_correct) {
+    streak++;
+    correctCount++;
+    const multiplier = streak >= 5 ? 2 : streak >= 3 ? 1.5 : 1;
+    score += result.points_earned;
+    bestStreak = Math.max(bestStreak, streak);
+    updateHUD();
+    floatPoints(`+${result.points_earned}`, streak >= 3 ? `🔥 x${multiplier} Streak!` : null);
+    showFeedback(true, result.points_earned, result.explanation, c);
+  } else {
+    streak = 0;
+    updateHUD();
+    showFeedback(false, 0, result.explanation, c, result.correct_answer);
+  }
+}
+
+function autoSubmitTimeout(cid) {
+  answered[cid] = true;
+  stopChallengeTimer(cid);
+  streak = 0;
+  updateHUD();
+  showFeedback(false, 0, "Time's up! You didn't answer in time.", CHALLENGES.find(c=>c.id===cid));
+}
+
+// ── Mark options after answer ──────────────────────────────────────
+function markOptions(cid, chosen, correctAnswer) {
+  const container = document.getElementById(`opts-${cid}`);
+  if (!container) return;
+  container.querySelectorAll('.option-btn').forEach(btn => {
+    btn.disabled = true;
+    const v = btn.dataset.value;
+    if (correctAnswer && v === correctAnswer.trim().toLowerCase()) {
+      btn.classList.add('correct');
+    } else if (v === chosen.trim().toLowerCase()) {
+      btn.classList.add('wrong');
+    }
+  });
+}
+
+// ── Feedback overlay ───────────────────────────────────────────────
+function showFeedback(isCorrect, pts, explanation, challenge, correctAnswer) {
+  const overlay = document.getElementById('feedback-overlay');
+  document.getElementById('feedback-icon').innerHTML  = isCorrect
+    ? '<div class="result-icon correct"><i class="bi bi-check-lg"></i></div>'
+    : '<div class="result-icon wrong"><i class="bi bi-x-lg"></i></div>';
+  document.getElementById('feedback-title').innerHTML  = isCorrect
+    ? `<span class="text-success fs-2 fw-bold">Correct! 🎉</span>`
+    : `<span class="text-danger fs-2 fw-bold">Not quite…</span>`;
+  document.getElementById('feedback-pts').innerHTML = isCorrect
+    ? `<span class="badge bg-warning text-dark fs-5 px-4 py-2">+${pts} points</span>`
+    : (correctAnswer ? `<span class="text-muted">Correct answer: <strong class="text-success">${correctAnswer.toUpperCase()}</strong></span>` : '');
+  const streakMsg = streak >= 3 ? `<div class="mt-2 text-warning fw-bold">🔥 ${streak} in a row! Keep going!</div>` : '';
+  document.getElementById('feedback-streak').innerHTML = streakMsg;
+  document.getElementById('feedback-explanation').innerHTML = explanation
+    ? `<div class="explanation-box mt-3 p-3 text-start"><i class="bi bi-lightbulb-fill text-warning me-2"></i>${explanation}</div>` : '';
+
+  overlay.classList.remove('d-none');
+  overlay.classList.add('show');
+  if (isCorrect) overlay.classList.add('correct-bg'); else overlay.classList.remove('correct-bg');
+}
+
+// ── Next challenge ─────────────────────────────────────────────────
+function nextChallenge() {
+  const overlay = document.getElementById('feedback-overlay');
+  overlay.classList.add('d-none');
+  overlay.classList.remove('show');
+  currentIdx++;
+  if (currentIdx >= CHALLENGES.length) { showComplete(); return; }
+  showSlide(currentIdx);
+}
+
+function showSlide(idx) {
+  document.querySelectorAll('.challenge-slide').forEach(s => s.classList.add('d-none'));
+  const slide = document.getElementById(`slide-${idx}`);
+  slide.classList.remove('d-none');
+  slide.classList.add('slide-in');
+  setTimeout(() => slide.classList.remove('slide-in'), 600);
+  const c = CHALLENGES[idx];
+  startChallengeTimer(c);
+  updateHUD(idx);
+}
+
+function updateHUD(idx) {
+  const i = idx !== undefined ? idx : currentIdx;
+  document.getElementById('hud-score').textContent  = score;
+  document.getElementById('hud-streak').textContent = streak > 0 ? `${streak}🔥` : '0';
+  document.getElementById('hud-current').textContent = i + 1;
+  const pct = Math.round((i / CHALLENGES.length) * 100);
+  document.getElementById('hud-pct').textContent = pct + '%';
+  document.getElementById('hud-bar').style.width = pct + '%';
+  const streakEl = document.getElementById('hud-streak');
+  streakEl.className = streak >= 5 ? 'hud-value fw-bold fs-4 text-warning pulse'
+    : streak >= 3 ? 'hud-value fw-bold fs-4 text-orange' : 'hud-value fw-bold fs-4 text-muted';
+}
+
+// ── Floating +pts animation ────────────────────────────────────────
+function floatPoints(label, subLabel) {
+  const container = document.getElementById('float-container');
+  const el = document.createElement('div');
+  el.className = 'float-pts';
+  el.innerHTML = `<div>${label}</div>${subLabel ? `<div class="float-sub">${subLabel}</div>` : ''}`;
+  el.style.left = `${40 + Math.random() * 20}%`;
+  el.style.top = '60%';
+  container.appendChild(el);
+  setTimeout(() => el.remove(), 1800);
+}
+
+// ── Hint system ────────────────────────────────────────────────────
+function showHint(cid) {
+  const c = CHALLENGES.find(ch => ch.id === cid);
+  if (!c || !c.hints || c.hints.length === 0) return;
+  const hintBox = document.getElementById(`hint-box-${cid}`);
+  const hintCount = parseInt(hintBox.dataset.count || '0');
+  const hint = c.hints[Math.min(hintCount, c.hints.length - 1)];
+  hintBox.innerHTML = `<div class="hint-reveal"><i class="bi bi-lightbulb me-2 text-warning"></i>${hint}</div>`;
+  hintBox.dataset.count = hintCount + 1;
+  hintBox.classList.remove('d-none');
+  // Deduct 50% from potential pts — visual warning only (actual deduction on server is not implemented for hints)
+  const btn = document.getElementById(`hint-btn-${cid}`);
+  if (hintCount + 1 >= c.hints.length) btn.disabled = true;
+  btn.innerHTML = `<i class="bi bi-lightbulb-fill me-1"></i>Hint used (-50% pts)`;
+}
+
+// ── Password analyser ──────────────────────────────────────────────
+function analyzePassword(pwd, containerId) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  container.classList.remove('d-none');
+  renderStrength(pwd, containerId);
+}
+function analyzePasswordLive(pwd, containerId) { renderStrength(pwd, containerId); }
+
+function renderStrength(pwd, containerId) {
+  let score = 0, checks = [];
+  if (pwd.length >= 8)  { score += 20; checks.push({ok:true,  label:`Length ≥ 8 (${pwd.length} chars)`}); }
+  else                  {              checks.push({ok:false, label:`Too short (${pwd.length} chars)`}); }
+  if (pwd.length >= 16) { score += 20; checks.push({ok:true,  label:'Length ≥ 16 — great!'}); }
+  if (/[A-Z]/.test(pwd)){ score += 15; checks.push({ok:true,  label:'Uppercase letters'}); }
+  else                  {              checks.push({ok:false, label:'No uppercase letters'}); }
+  if (/[a-z]/.test(pwd)){ score += 15; checks.push({ok:true,  label:'Lowercase letters'}); }
+  if (/[0-9]/.test(pwd)){ score += 15; checks.push({ok:true,  label:'Numbers'}); }
+  else                  {              checks.push({ok:false, label:'No numbers'}); }
+  if (/[^A-Za-z0-9]/.test(pwd)) { score += 15; checks.push({ok:true, label:'Special characters'}); }
+  else                  {              checks.push({ok:false, label:'No special characters'}); }
+
+  const label = score < 30 ? 'Very Weak' : score < 50 ? 'Weak' : score < 70 ? 'Fair' : score < 90 ? 'Strong' : 'Very Strong';
+  const color = score < 30 ? 'bg-danger' : score < 50 ? 'bg-danger' : score < 70 ? 'bg-warning' : score < 90 ? 'bg-success' : 'bg-success';
+
+  document.getElementById(`strength-bar-${containerId.split('-').pop()}`  ) && (() => {
+    const bar = document.getElementById(`strength-bar-${containerId}`);
+    const lbl = document.getElementById(`strength-label-${containerId}`);
+    if (bar) { bar.style.width = score + '%'; bar.className = `progress-bar ${color}`; }
+    if (lbl) lbl.textContent = label;
+    const det = document.getElementById(`strength-details-${containerId}`);
+    if (det) det.innerHTML = checks.map(ch =>
+      `<div class="col-6"><span class="${ch.ok?'text-success':'text-danger'}">${ch.ok?'✓':'✗'} ${ch.label}</span></div>`
+    ).join('');
+  })();
+  // Also handle the direct id pattern used in the template
+  const bar = document.getElementById(`strength-bar-${containerId}`);
+  const lbl = document.getElementById(`strength-label-${containerId}`);
+  if (bar) { bar.style.width = score + '%'; bar.className = `progress-bar ${color}`; }
+  if (lbl) lbl.textContent = label;
+  const det = document.getElementById(`strength-details-${containerId}`);
+  if (det) det.innerHTML = checks.map(ch =>
+    `<div class="col-6"><span class="${ch.ok?'text-success':'text-danger'}">${ch.ok?'✓':'✗'} ${ch.label}</span></div>`
+  ).join('');
+}
+
+// ── Complete screen + confetti ─────────────────────────────────────
+function showComplete() {
+  clearInterval(globalInterval);
+  document.getElementById('final-score').textContent   = score;
+  document.getElementById('final-correct').textContent = `${correctCount}/${CHALLENGES.length}`;
+  document.getElementById('final-streak').textContent  = `${bestStreak}🔥`;
+  document.getElementById('complete-overlay').classList.remove('d-none');
+  launchConfetti();
+}
+
+function launchConfetti() {
+  const canvas = document.getElementById('confetti-canvas');
+  const myConfetti = confetti.create(canvas, { resize: true });
+  const end = Date.now() + 3500;
+  (function frame() {
+    myConfetti({ particleCount: 6, angle: 60,  spread: 55, origin: { x: 0 }, colors: ['#ffc107','#0dcaf0','#198754'] });
+    myConfetti({ particleCount: 6, angle: 120, spread: 55, origin: { x: 1 }, colors: ['#ffc107','#dc3545','#6f42c1'] });
+    if (Date.now() < end) requestAnimationFrame(frame);
+  })();
+}
+
+// ── Warn helper ────────────────────────────────────────────────────
+function flashBtnWarning(cid, msg) {
+  const btn = document.getElementById(`submit-btn-${cid}`);
+  const orig = btn.innerHTML;
+  btn.innerHTML = `<i class="bi bi-exclamation-triangle me-1"></i>${msg}`;
+  btn.classList.add('btn-danger'); btn.classList.remove('btn-warning');
+  setTimeout(() => { btn.innerHTML = orig; btn.classList.remove('btn-danger'); btn.classList.add('btn-warning'); }, 1500);
+}
+
+// ── Boot ───────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  if (CHALLENGES.length > 0) startChallengeTimer(CHALLENGES[0]);
+  updateHUD(0);
+});
+</script>
+{% endblock %}

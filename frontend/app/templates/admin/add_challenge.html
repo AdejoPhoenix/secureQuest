@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block title %}Add Challenge{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="d-flex align-items-center gap-3 mb-4">
+      {% if tournament %}
+      <a href="{{ url_for('admin.edit_tournament', tournament_id=tournament.id) }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
+      {% endif %}
+      <div>
+        <h4 class="fw-bold text-white mb-0"><i class="bi bi-plus-circle-fill text-success me-2"></i>Add Challenge</h4>
+        {% if tournament %}<span class="text-muted small">to: {{ tournament.name }}</span>{% endif %}
+      </div>
+    </div>
+
+    <div class="card bg-dark border-secondary">
+      <div class="card-body p-4">
+        <form method="POST">
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label text-light fw-semibold">Challenge Title *</label>
+              <input type="text" name="title" class="form-control bg-secondary border-secondary text-white" placeholder="e.g. Identify the Phishing Email" required />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label text-light fw-semibold">Type *</label>
+              <select name="type" id="challenge-type" class="form-select bg-secondary border-secondary text-white" onchange="toggleOptions()">
+                <option value="quiz">Quiz</option>
+                <option value="phishing">Phishing Detection</option>
+                <option value="scenario">Scenario</option>
+                <option value="password">Password Strength</option>
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label text-light fw-semibold">Difficulty</label>
+              <select name="difficulty_level" class="form-select bg-secondary border-secondary text-white">
+                <option value="easy">Easy</option>
+                <option value="medium">Medium</option>
+                <option value="hard">Hard</option>
+                <option value="expert">Expert</option>
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label text-light fw-semibold">Points</label>
+              <input type="number" name="points" class="form-control bg-secondary border-secondary text-white" value="10" min="1" max="1000" />
+            </div>
+            <div class="col-12">
+              <label class="form-label text-light fw-semibold">Question / Scenario *</label>
+              <textarea name="description" class="form-control bg-secondary border-secondary text-white" rows="4" placeholder="Write the challenge question, scenario, or email content…" required></textarea>
+            </div>
+
+            <!-- Multiple choice options -->
+            <div id="options-section" class="col-12">
+              <label class="form-label text-light fw-semibold">Answer Options (for multiple choice)</label>
+              <div class="row g-2">
+                {% for key in ['a','b','c','d'] %}
+                <div class="col-md-6">
+                  <div class="input-group">
+                    <span class="input-group-text bg-secondary border-secondary text-warning fw-bold">{{ key | upper }}</span>
+                    <input type="text" name="option_{{ key }}" class="form-control bg-secondary border-secondary text-white" placeholder="Option {{ key | upper }}" />
+                  </div>
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label text-light fw-semibold">Correct Answer *</label>
+              <input type="text" name="correct_answer" class="form-control bg-secondary border-secondary text-white" placeholder="e.g. a  or  True  or  strong" required />
+              <div class="form-text text-muted">For multiple choice enter the letter (a/b/c/d). For true/false enter True or False.</div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label text-light fw-semibold">Order (position in tournament)</label>
+              <input type="number" name="order" class="form-control bg-secondary border-secondary text-white" value="0" min="0" />
+            </div>
+            <div class="col-12">
+              <label class="form-label text-light fw-semibold">Explanation (shown after answer)</label>
+              <textarea name="explanation" class="form-control bg-secondary border-secondary text-white" rows="2" placeholder="Explain why the correct answer is correct…"></textarea>
+            </div>
+            <div class="col-12">
+              <label class="form-label text-light fw-semibold">Hints <span class="text-muted fw-normal">(optional — one per line, shown on request)</span></label>
+              <textarea name="hints" class="form-control bg-secondary border-secondary text-white" rows="3" placeholder="Hint 1&#10;Hint 2&#10;Hint 3"></textarea>
+              <div class="form-text text-muted">Players can request these hints one at a time. Each hint costs 50% of the potential points.</div>
+            </div>
+          </div>
+
+          <hr class="border-secondary my-4" />
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-success fw-bold px-4">
+              <i class="bi bi-plus-lg me-1"></i>Add Challenge
+            </button>
+            {% if tournament %}
+            <a href="{{ url_for('admin.edit_tournament', tournament_id=tournament.id) }}" class="btn btn-outline-secondary">Cancel</a>
+            {% endif %}
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function toggleOptions() {
+  const type = document.getElementById('challenge-type').value;
+  const section = document.getElementById('options-section');
+  section.style.display = type === 'quiz' || type === 'phishing' || type === 'scenario' ? 'block' : 'none';
+}
+toggleOptions();
+</script>
+{% endblock %}

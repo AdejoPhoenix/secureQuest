@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+{% block title %}Edit: {{ course.name }}{% endblock %}
+{% block content %}
+<div class="d-flex align-items-center gap-3 mb-4">
+  <a href="{{ url_for('admin.courses') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
+  <div class="flex-grow-1">
+    <h4 class="fw-bold text-white mb-0">{{ course.name }}</h4>
+    <div class="d-flex gap-2 mt-1">
+      {% if course.is_published %}
+      <span class="badge bg-success"><i class="bi bi-broadcast me-1"></i>Published</span>
+      {% else %}
+      <span class="badge bg-secondary"><i class="bi bi-pencil me-1"></i>Draft</span>
+      {% endif %}
+      <span class="badge bg-secondary">{{ course.category | replace('_',' ') | title }}</span>
+      <span class="badge difficulty-{{ course.difficulty }}">{{ course.difficulty | upper }}</span>
+    </div>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="{{ url_for('admin.preview_course', course_id=course.id) }}" class="btn btn-outline-info" target="_blank">
+      <i class="bi bi-eye me-1"></i>Preview
+    </a>
+    <!-- Publish / Unpublish -->
+    <form method="POST" action="{{ url_for('admin.publish_course', course_id=course.id) }}">
+      {% if course.is_published %}
+      <input type="hidden" name="action" value="unpublish" />
+      <button type="submit" class="btn btn-outline-warning">
+        <i class="bi bi-eye-slash me-1"></i>Unpublish
+      </button>
+      {% else %}
+      <input type="hidden" name="action" value="publish" />
+      <button type="submit" class="btn btn-success fw-bold">
+        <i class="bi bi-broadcast me-1"></i>Publish Course
+      </button>
+      {% endif %}
+    </form>
+  </div>
+</div>
+
+<div class="row g-4">
+  <!-- Course settings -->
+  <div class="col-lg-5">
+    <div class="card bg-dark border-secondary mb-4">
+      <div class="card-header border-secondary"><h6 class="mb-0 fw-bold text-white">Course Settings</h6></div>
+      <div class="card-body p-4">
+        <form method="POST">
+          <div class="mb-3">
+            <label class="form-label text-light">Title</label>
+            <input type="text" name="name" class="form-control bg-secondary border-secondary text-white" value="{{ course.name }}" required />
+          </div>
+          <div class="mb-3">
+            <label class="form-label text-light">Description</label>
+            <textarea name="description" class="form-control bg-secondary border-secondary text-white" rows="3">{{ course.description or '' }}</textarea>
+          </div>
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <label class="form-label text-light">Category</label>
+              <select name="category" class="form-select bg-secondary border-secondary text-white">
+                {% for cat in ['phishing','passwords','social_engineering','malware','network_security','general'] %}
+                <option value="{{ cat }}" {% if course.category == cat %}selected{% endif %}>{{ cat | replace('_',' ') | title }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-6">
+              <label class="form-label text-light">Difficulty</label>
+              <select name="difficulty" class="form-select bg-secondary border-secondary text-white">
+                {% for d in ['easy','medium','hard','expert'] %}
+                <option value="{{ d }}" {% if course.difficulty == d %}selected{% endif %}>{{ d | title }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label text-light">XP Reward</label>
+            <input type="number" name="xp_reward" class="form-control bg-secondary border-secondary text-white" value="{{ course.xp_reward }}" />
+          </div>
+          <div class="mb-3">
+            <label class="form-label text-light">Card Colour</label>
+            <div class="d-flex gap-2 flex-wrap">
+              {% set colours = ['#ffc107','#0dcaf0','#198754','#dc3545','#6f42c1','#fd7e14','#0d6efd','#20c997'] %}
+              {% for col in colours %}
+              <label class="colour-swatch {% if course.thumbnail_color == col %}selected{% endif %}" style="background:{{ col }}">
+                <input type="radio" name="thumbnail_color" value="{{ col }}" class="d-none"
+                  {% if course.thumbnail_color == col %}checked{% endif %} />
+              </label>
+              {% endfor %}
+            </div>
+          </div>
+          <button type="submit" class="btn btn-warning w-100 fw-bold"><i class="bi bi-save me-1"></i>Save Changes</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modules list -->
+  <div class="col-lg-7">
+    <div class="card bg-dark border-secondary">
+      <div class="card-header border-secondary d-flex justify-content-between align-items-center">
+        <h6 class="mb-0 fw-bold text-white">
+          <i class="bi bi-layers me-2 text-warning"></i>Modules ({{ course.modules | length }})
+        </h6>
+        <a href="{{ url_for('admin.add_module', course_id=course.id) }}" class="btn btn-sm btn-success">
+          <i class="bi bi-plus me-1"></i>Add Module
+        </a>
+      </div>
+      <div class="card-body p-0">
+        {% if course.modules %}
+        <div class="list-group list-group-flush" id="module-list">
+          {% for m in course.modules %}
+          <div class="list-group-item bg-dark border-secondary">
+            <div class="d-flex align-items-center gap-3">
+              <div class="module-type-icon type-icon-{{ m.type }}">
+                <i class="bi bi-{{ 'file-text' if m.type=='lesson' else 'question-circle' if m.type=='quiz' else 'diagram-3' if m.type=='scenario' else 'arrows-move' }}"></i>
+              </div>
+              <div class="flex-grow-1">
+                <div class="d-flex align-items-center gap-2">
+                  <span class="text-white fw-semibold small">{{ m.title }}</span>
+                  {% if not m.is_required %}
+                  <span class="badge bg-secondary" style="font-size:.6rem">Optional</span>
+                  {% endif %}
+                </div>
+                <div class="d-flex gap-2 mt-1">
+                  <span class="badge module-badge-{{ m.type }}">{{ m.type | upper }}</span>
+                  <span class="text-muted" style="font-size:.72rem"><i class="bi bi-star me-1"></i>{{ m.xp_reward }} XP</span>
+                  {% if m.type in ['quiz','dragdrop'] %}
+                  <span class="text-muted" style="font-size:.72rem">Pass: {{ m.pass_score }}%</span>
+                  {% endif %}
+                </div>
+              </div>
+              <span class="text-muted small">#{{ m.order + 1 }}</span>
+              <a href="{{ url_for('admin.edit_module', course_id=course.id, module_id=m.id) }}"
+                class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
+              <form method="POST" action="{{ url_for('admin.delete_module', course_id=course.id, module_id=m.id) }}"
+                onsubmit="return confirm('Delete this module?')">
+                <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+              </form>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center text-muted py-5">
+          <i class="bi bi-layers fs-1 d-block mb-2 text-secondary"></i>
+          No modules yet.<br>
+          <a href="{{ url_for('admin.add_module', course_id=course.id) }}" class="text-warning">Add the first module</a>
+        </div>
+        {% endif %}
+      </div>
+      {% if course.modules %}
+      <div class="card-footer border-secondary bg-transparent">
+        <div class="d-flex justify-content-between text-muted small">
+          <span><i class="bi bi-star me-1"></i>Total XP: {{ course.modules | sum(attribute='xp_reward') }} + {{ course.xp_reward }} completion bonus</span>
+          <a href="{{ url_for('admin.course_analytics', course_id=course.id) }}" class="text-info">
+            <i class="bi bi-graph-up me-1"></i>View Analytics
+          </a>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<script>
+document.querySelectorAll('.colour-swatch').forEach(el => {
+  el.addEventListener('click', () => {
+    document.querySelectorAll('.colour-swatch').forEach(s => s.classList.remove('selected'));
+    el.classList.add('selected');
+  });
+});
+</script>
+{% endblock %}

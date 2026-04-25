@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% block title %}{{ tournament.name }}{% endblock %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-lg-8">
+    <div class="card bg-dark border-secondary mb-4">
+      <div class="card-body">
+        <div class="d-flex gap-2 mb-2">
+          <span class="badge difficulty-{{ tournament.difficulty }}">{{ tournament.difficulty | upper }}</span>
+          {% if tournament.is_active %}
+          <span class="badge bg-success">Active</span>
+          {% else %}
+          <span class="badge bg-secondary">Inactive</span>
+          {% endif %}
+        </div>
+        <h3 class="fw-bold text-white">{{ tournament.name }}</h3>
+        <p class="text-muted">{{ tournament.description or 'No description.' }}</p>
+
+        <div class="row g-3 mb-4">
+          <div class="col-6 col-md-3">
+            <div class="text-center p-3 rounded bg-secondary bg-opacity-25">
+              <div class="fs-4 fw-bold text-warning">{{ tournament.challenges | length }}</div>
+              <div class="text-muted small">Challenges</div>
+            </div>
+          </div>
+          <div class="col-6 col-md-3">
+            <div class="text-center p-3 rounded bg-secondary bg-opacity-25">
+              <div class="fs-4 fw-bold text-info">{{ (tournament.timer_seconds // 60) }}m</div>
+              <div class="text-muted small">Per Challenge</div>
+            </div>
+          </div>
+          <div class="col-6 col-md-3">
+            <div class="text-center p-3 rounded bg-secondary bg-opacity-25">
+              <div class="fs-4 fw-bold text-success">{{ tournament.participant_count }}</div>
+              <div class="text-muted small">Players</div>
+            </div>
+          </div>
+          <div class="col-6 col-md-3">
+            <div class="text-center p-3 rounded bg-secondary bg-opacity-25">
+              <div class="fs-4 fw-bold text-danger">{{ (tournament.total_timer_seconds // 60) }}m</div>
+              <div class="text-muted small">Total Time</div>
+            </div>
+          </div>
+        </div>
+
+        {% if tournament.is_active %}
+        <form method="POST" action="{{ url_for('main.join_tournament', tournament_id=tournament.id) }}">
+          <button type="submit" class="btn btn-warning btn-lg fw-bold me-2">
+            <i class="bi bi-play-fill me-1"></i>Join & Play
+          </button>
+        </form>
+        <a href="{{ url_for('main.play', tournament_id=tournament.id) }}" class="btn btn-outline-warning btn-lg mt-2">
+          <i class="bi bi-controller me-1"></i>Resume Playing
+        </a>
+        {% else %}
+        <div class="alert alert-secondary">This tournament is not currently active.</div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Challenge preview (types only) -->
+    {% if tournament.challenges %}
+    <div class="card bg-dark border-secondary">
+      <div class="card-header border-secondary">
+        <h6 class="mb-0 fw-bold text-white">Challenges Overview</h6>
+      </div>
+      <div class="list-group list-group-flush">
+        {% for c in tournament.challenges %}
+        <div class="list-group-item bg-dark border-secondary d-flex align-items-center gap-3">
+          <div class="challenge-icon text-{{ 'warning' if c.type == 'quiz' else 'danger' if c.type == 'phishing' else 'info' if c.type == 'scenario' else 'success' }}">
+            <i class="bi bi-{{ 'question-circle' if c.type == 'quiz' else 'fish' if c.type == 'phishing' else 'diagram-3' if c.type == 'scenario' else 'key' }}"></i>
+          </div>
+          <div class="flex-grow-1">
+            <div class="text-white fw-semibold">Challenge #{{ loop.index }}: {{ c.title }}</div>
+            <div class="d-flex gap-2">
+              <span class="badge bg-secondary">{{ c.type | upper }}</span>
+              <span class="badge difficulty-{{ c.difficulty_level }}">{{ c.difficulty_level | upper }}</span>
+              <span class="text-muted small"><i class="bi bi-star me-1"></i>{{ c.points }} pts</span>
+            </div>
+          </div>
+          <span class="text-muted small">#{{ c.order + 1 }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Leaderboard sidebar -->
+  <div class="col-lg-4">
+    <div class="card bg-dark border-secondary">
+      <div class="card-header border-secondary">
+        <h6 class="mb-0 fw-bold text-white"><i class="bi bi-bar-chart-fill text-warning me-2"></i>Leaderboard</h6>
+      </div>
+      <div class="card-body p-0">
+        {% for entry in leaderboard %}
+        <div class="d-flex align-items-center gap-3 px-3 py-2 border-bottom border-secondary">
+          <span class="rank-badge {% if entry.rank == 1 %}gold{% elif entry.rank == 2 %}silver{% elif entry.rank == 3 %}bronze{% else %}default{% endif %}">
+            #{{ entry.rank }}
+          </span>
+          <div class="flex-grow-1">
+            <div class="text-white small fw-semibold">{{ entry.username }}</div>
+            <div class="text-muted" style="font-size:.75rem">
+              {{ entry.challenges_completed }} challenges
+              {% if entry.is_completed %}<span class="text-success"><i class="bi bi-check-circle ms-1"></i></span>{% endif %}
+            </div>
+          </div>
+          <span class="text-warning fw-bold small">{{ entry.score }}</span>
+        </div>
+        {% else %}
+        <div class="text-center text-muted py-4 small">No players yet. Be first!</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

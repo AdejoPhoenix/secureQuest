@@ -1,0 +1,17 @@
+<!-- Hint box -->
+{% if c.hints %}
+<div class="hint-box d-none mt-3" id="hint-box-{{ c.id }}" data-count="0"></div>
+{% endif %}
+
+<!-- Action row -->
+<div class="d-flex align-items-center gap-2 mt-4 flex-wrap">
+  <button class="btn btn-warning btn-lg fw-bold px-5" id="submit-btn-{{ c.id }}"
+    onclick="submitAnswer({{ c.id }})" {% if not c.options %}{% endif %}>
+    <i class="bi bi-send-fill me-2"></i>Submit Answer
+  </button>
+  {% if c.hints %}
+  <button class="btn btn-outline-secondary" id="hint-btn-{{ c.id }}" onclick="showHint({{ c.id }})">
+    <i class="bi bi-lightbulb me-1"></i>Hint <span class="badge bg-secondary ms-1">{{ c.hints | length }}</span>
+  </button>
+  {% endif %}
+</div>

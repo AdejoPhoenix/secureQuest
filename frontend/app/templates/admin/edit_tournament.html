@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block title %}Edit: {{ tournament.name }}{% endblock %}
+{% block content %}
+<div class="d-flex align-items-center gap-3 mb-4">
+  <a href="{{ url_for('admin.tournaments') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
+  <div>
+    <h4 class="fw-bold text-white mb-0"><i class="bi bi-pencil-fill text-warning me-2"></i>Edit Tournament</h4>
+    <span class="text-muted small">{{ tournament.name }}</span>
+  </div>
+</div>
+
+<div class="row g-4">
+  <!-- Edit form -->
+  <div class="col-lg-7">
+    <div class="card bg-dark border-secondary mb-4">
+      <div class="card-header border-secondary"><h6 class="mb-0 text-white fw-bold">Tournament Settings</h6></div>
+      <div class="card-body p-4">
+        <form method="POST">
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label text-light">Name</label>
+              <input type="text" name="name" class="form-control bg-secondary border-secondary text-white" value="{{ tournament.name }}" required />
+            </div>
+            <div class="col-12">
+              <label class="form-label text-light">Description</label>
+              <textarea name="description" class="form-control bg-secondary border-secondary text-white" rows="3">{{ tournament.description or '' }}</textarea>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label text-light">Difficulty</label>
+              <select name="difficulty" class="form-select bg-secondary border-secondary text-white">
+                {% for d in ['easy','medium','hard','expert'] %}
+                <option value="{{ d }}" {% if tournament.difficulty == d %}selected{% endif %}>{{ d | title }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label text-light">Time/Challenge (s)</label>
+              <input type="number" name="timer_seconds" class="form-control bg-secondary border-secondary text-white" value="{{ tournament.timer_seconds }}" min="30" />
+            </div>
+            <div class="col-md-4">
+              <label class="form-label text-light">Total Time (s)</label>
+              <input type="number" name="total_timer_seconds" class="form-control bg-secondary border-secondary text-white" value="{{ tournament.total_timer_seconds }}" min="60" />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label text-light">Max Participants</label>
+              <input type="number" name="max_participants" class="form-control bg-secondary border-secondary text-white" value="{{ tournament.max_participants }}" min="1" />
+            </div>
+            <div class="col-md-6 d-flex align-items-end">
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" name="is_active" id="is_active" {% if tournament.is_active %}checked{% endif %} />
+                <label class="form-check-label text-light" for="is_active">Active</label>
+              </div>
+            </div>
+          </div>
+          <div class="mt-3 d-flex gap-2">
+            <button type="submit" class="btn btn-warning fw-bold"><i class="bi bi-save me-1"></i>Save Changes</button>
+            <a href="{{ url_for('admin.add_challenge', tournament_id=tournament.id) }}" class="btn btn-success">
+              <i class="bi bi-plus-circle me-1"></i>Add Challenge
+            </a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Challenges list -->
+  <div class="col-lg-5">
+    <div class="card bg-dark border-secondary">
+      <div class="card-header d-flex justify-content-between border-secondary">
+        <h6 class="mb-0 text-white fw-bold">Challenges ({{ tournament.challenges | length }})</h6>
+        <a href="{{ url_for('admin.add_challenge', tournament_id=tournament.id) }}" class="btn btn-sm btn-success">
+          <i class="bi bi-plus"></i> Add
+        </a>
+      </div>
+      <div class="card-body p-0">
+        {% if tournament.challenges %}
+        <div class="list-group list-group-flush">
+          {% for c in tournament.challenges %}
+          <div class="list-group-item bg-dark border-secondary">
+            <div class="d-flex justify-content-between align-items-start">
+              <div>
+                <div class="text-white fw-semibold small">{{ c.title }}</div>
+                <div class="d-flex gap-1 mt-1 flex-wrap">
+                  <span class="badge bg-secondary" style="font-size:.65rem">{{ c.type | upper }}</span>
+                  <span class="badge difficulty-{{ c.difficulty_level }}" style="font-size:.65rem">{{ c.difficulty_level }}</span>
+                  <span class="text-muted" style="font-size:.7rem">{{ c.points }} pts</span>
+                </div>
+              </div>
+              <form method="POST" action="{{ url_for('admin.delete_challenge', challenge_id=c.id) }}"
+                onsubmit="return confirm('Delete this challenge?')">
+                <input type="hidden" name="tournament_id" value="{{ tournament.id }}" />
+                <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+              </form>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center text-muted py-4 small">
+          No challenges yet.<br>
+          <a href="{{ url_for('admin.add_challenge', tournament_id=tournament.id) }}" class="text-warning">Add the first one</a>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}New Course{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-7">
+    <div class="d-flex align-items-center gap-3 mb-4">
+      <a href="{{ url_for('admin.courses') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
+      <h4 class="fw-bold text-white mb-0"><i class="bi bi-plus-circle-fill text-warning me-2"></i>Create Course</h4>
+    </div>
+    <div class="card bg-dark border-secondary">
+      <div class="card-body p-4">
+        <form method="POST">
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label text-light fw-semibold">Course Title *</label>
+              <input type="text" name="name" class="form-control bg-secondary border-secondary text-white"
+                placeholder="e.g. Phishing Defence Masterclass" required />
+            </div>
+            <div class="col-12">
+              <label class="form-label text-light fw-semibold">Description</label>
+              <textarea name="description" class="form-control bg-secondary border-secondary text-white" rows="3"
+                placeholder="What will learners know after completing this course?"></textarea>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label text-light fw-semibold">Category</label>
+              <select name="category" class="form-select bg-secondary border-secondary text-white">
+                <option value="phishing">Phishing</option>
+                <option value="passwords">Passwords</option>
+                <option value="social_engineering">Social Engineering</option>
+                <option value="malware">Malware</option>
+                <option value="network_security">Network Security</option>
+                <option value="general" selected>General</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label text-light fw-semibold">Difficulty</label>
+              <select name="difficulty" class="form-select bg-secondary border-secondary text-white">
+                <option value="easy">Easy</option>
+                <option value="medium" selected>Medium</option>
+                <option value="hard">Hard</option>
+                <option value="expert">Expert</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label text-light fw-semibold">XP Reward on Completion</label>
+              <input type="number" name="xp_reward" class="form-control bg-secondary border-secondary text-white"
+                value="100" min="10" max="5000" />
+            </div>
+            <div class="col-12">
+              <label class="form-label text-light fw-semibold">Card Colour</label>
+              <div class="d-flex gap-2 flex-wrap">
+                {% set colours = ['#ffc107','#0dcaf0','#198754','#dc3545','#6f42c1','#fd7e14','#0d6efd','#20c997'] %}
+                {% for col in colours %}
+                <label class="colour-swatch" style="background:{{ col }}">
+                  <input type="radio" name="thumbnail_color" value="{{ col }}" class="d-none"
+                    {% if col == '#ffc107' %}checked{% endif %} />
+                </label>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+          <hr class="border-secondary my-4" />
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-warning fw-bold px-4">
+              <i class="bi bi-check-lg me-1"></i>Create & Add Modules
+            </button>
+            <a href="{{ url_for('admin.courses') }}" class="btn btn-outline-secondary">Cancel</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.querySelectorAll('.colour-swatch').forEach(el => {
+  el.addEventListener('click', () => {
+    document.querySelectorAll('.colour-swatch').forEach(s => s.classList.remove('selected'));
+    el.classList.add('selected');
+  });
+  if (el.querySelector('input').checked) el.classList.add('selected');
+});
+</script>
+{% endblock %}

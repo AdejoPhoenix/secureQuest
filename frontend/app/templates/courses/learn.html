@@ -1,0 +1,425 @@
+{% extends "base.html" %}
+{% block title %}Learning: {{ course.name }}{% endblock %}
+{% block main_class %}p-0{% endblock %}
+{% block main_style %}overflow:hidden;height:calc(100vh - 56px){% endblock %}
+
+{% block content %}
+<div class="learn-layout">
+
+  <!-- ── SIDEBAR ──────────────────────────────────────────────────── -->
+  <aside class="learn-sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="fw-bold text-white small">{{ course.name }}</div>
+      <div class="mt-2">
+        <div class="d-flex justify-content-between text-muted" style="font-size:.72rem">
+          <span>Progress</span><span id="sb-pct">{{ progress.progress_pct | int }}%</span>
+        </div>
+        <div class="progress mt-1" style="height:5px;border-radius:3px">
+          <div class="progress-bar" id="sb-bar"
+            style="width:{{ progress.progress_pct }}%;background:{{ course.thumbnail_color }}"></div>
+        </div>
+      </div>
+    </div>
+    <div class="sidebar-modules">
+      {% set done_ids = progress.module_progress | selectattr('is_completed','equalto',true) | map(attribute='module_id') | list %}
+      {% for m in course.modules %}
+      <button class="sidebar-item {% if loop.first %}active{% endif %} {% if m.id in done_ids %}done{% endif %}"
+        id="sb-{{ m.id }}" onclick="gotoModule({{ loop.index0 }})">
+        <span class="sb-status">
+          {% if m.id in done_ids %}
+          <i class="bi bi-check-circle-fill text-success"></i>
+          {% else %}
+          <i class="bi bi-circle text-muted"></i>
+          {% endif %}
+        </span>
+        <div class="sb-info">
+          <div class="sb-title">{{ m.title }}</div>
+          <div class="sb-meta">
+            <span class="badge module-badge-{{ m.type }}" style="font-size:.58rem">{{ m.type }}</span>
+            <span class="text-muted ms-1" style="font-size:.65rem">{{ m.xp_reward }} XP</span>
+          </div>
+        </div>
+      </button>
+      {% endfor %}
+    </div>
+  </aside>
+
+  <!-- ── MAIN CONTENT ─────────────────────────────────────────────── -->
+  <main class="learn-main">
+
+    <!-- XP counter HUD -->
+    <div class="learn-hud">
+      <button class="btn btn-sm btn-outline-secondary" onclick="document.getElementById('sidebar').classList.toggle('collapsed')">
+        <i class="bi bi-layout-sidebar"></i>
+      </button>
+      <span class="text-muted small ms-2">
+        {{ course.name }}
+        {% if preview_mode %}<span class="badge bg-warning text-dark ms-2">PREVIEW</span>{% endif %}
+      </span>
+      <div class="ms-auto d-flex align-items-center gap-3">
+        {% if not preview_mode %}
+        <span class="hud-xp-counter"><i class="bi bi-star-fill text-warning me-1"></i><span id="hud-xp">{{ progress.xp_earned }}</span> XP</span>
+        {% endif %}
+        {% if preview_mode %}
+        <a href="{{ url_for('admin.edit_course', course_id=course.id) }}" class="btn btn-sm btn-outline-warning">
+          <i class="bi bi-arrow-left me-1"></i>Back to Editor
+        </a>
+        {% else %}
+        <a href="{{ url_for('courses.detail', course_id=course.id) }}" class="btn btn-sm btn-outline-secondary">Exit</a>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Module panels -->
+    {% for m in course.modules %}
+    {% set is_done = m.id in (progress.module_progress | selectattr('is_completed','equalto',true) | map(attribute='module_id') | list) %}
+    <div class="module-panel {% if not loop.first %}d-none{% endif %}" id="panel-{{ loop.index0 }}"
+      data-module-id="{{ m.id }}" data-done="{{ 'true' if is_done else 'false' }}">
+
+      <div class="module-header mb-4">
+        <div class="d-flex align-items-center gap-2 mb-1">
+          <span class="badge module-badge-{{ m.type }}">{{ m.type | upper }}</span>
+          <span class="badge difficulty-{{ course.difficulty }}">{{ course.difficulty | upper }}</span>
+          <span class="text-warning small ms-auto"><i class="bi bi-star-fill me-1"></i>{{ m.xp_reward }} XP</span>
+        </div>
+        <h3 class="fw-bold text-white">{{ m.title }}</h3>
+        {% if is_done %}<div class="alert alert-success py-2 small"><i class="bi bi-check-circle-fill me-2"></i>You've completed this module.</div>{% endif %}
+      </div>
+
+      <!-- ── LESSON renderer ──────────────────────────────────────── -->
+      {% if m.type == 'lesson' %}
+      <div class="lesson-body text-light mb-4">{{ m.content.get('body','') | safe }}</div>
+      {% if m.content.get('callouts') %}
+      <div class="callouts mb-4">
+        {% for cb in m.content.get('callouts', []) %}
+        <div class="callout callout-{{ cb.type }} mb-2">
+          <i class="bi bi-{{ 'info-circle' if cb.type=='info' else 'exclamation-triangle' if cb.type=='warning' else 'x-octagon' if cb.type=='danger' else 'lightbulb' }} me-2"></i>
+          {{ cb.text }}
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+      <button class="btn btn-warning btn-lg fw-bold complete-btn" data-module-id="{{ m.id }}" data-score="100"
+        onclick="completeModule({{ m.id }}, 100, {{ loop.index0 }})">
+        {% if is_done %}Next Module <i class="bi bi-arrow-right ms-1"></i>{% else %}Mark Complete &amp; Continue <i class="bi bi-arrow-right ms-1"></i>{% endif %}
+      </button>
+
+      <!-- ── QUIZ renderer ────────────────────────────────────────── -->
+      {% elif m.type == 'quiz' %}
+      {% set questions = m.content.get('questions', []) %}
+      <div id="quiz-{{ m.id }}">
+        {% for q in questions %}
+        <div class="quiz-question mb-4" id="qq-{{ m.id }}-{{ loop.index0 }}">
+          <div class="fw-semibold text-white mb-3">
+            <span class="badge bg-secondary me-2">Q{{ loop.index }}</span>{{ q.text }}
+          </div>
+          <div class="options-grid" id="qopts-{{ m.id }}-{{ loop.index0 }}">
+            {% for k, v in q.options.items() %}
+            <button class="option-btn" data-value="{{ k }}"
+              onclick="selectQuizOption(this, '{{ m.id }}', {{ loop.index0 }})">
+              <span class="option-key">{{ k | upper }}</span>
+              <span class="option-text">{{ v }}</span>
+            </button>
+            {% endfor %}
+          </div>
+          <div class="quiz-feedback d-none mt-2" id="qf-{{ m.id }}-{{ loop.index0 }}"></div>
+        </div>
+        {% endfor %}
+        <div class="d-flex align-items-center gap-3 mt-3">
+          <button class="btn btn-warning btn-lg fw-bold" onclick="submitQuiz('{{ m.id }}', {{ m.id }}, {{ loop.index0 }}, {{ m.pass_score }})">
+            <i class="bi bi-check2-all me-1"></i>Submit Quiz
+          </button>
+          <div class="text-muted small">Pass: {{ m.pass_score }}%</div>
+        </div>
+        <div id="quiz-result-{{ m.id }}" class="mt-3"></div>
+      </div>
+
+      <!-- ── SCENARIO renderer ────────────────────────────────────── -->
+      {% elif m.type == 'scenario' %}
+      <div class="scenario-desc p-4 rounded mb-4" style="background:rgba(255,255,255,.05);border-left:3px solid #0dcaf0">
+        <p class="text-light mb-0" style="white-space:pre-line;line-height:1.9">{{ m.content.get('description','') }}</p>
+      </div>
+      <p class="text-warning fw-semibold mb-3"><i class="bi bi-arrow-right-circle me-2"></i>What do you do?</p>
+      <div class="scenario-choices" id="sc-{{ m.id }}">
+        {% for ch in m.content.get('choices', []) %}
+        <button class="scenario-choice-btn mb-2" data-correct="{{ 'true' if ch.is_correct else 'false' }}"
+          data-outcome="{{ ch.outcome }}"
+          onclick="pickScenarioChoice(this, {{ m.id }}, {{ loop.index0 }})">
+          <i class="bi bi-chevron-right me-2 text-muted"></i>{{ ch.text }}
+        </button>
+        {% endfor %}
+      </div>
+      <div id="sc-outcome-{{ m.id }}" class="mt-3"></div>
+      <div id="sc-next-{{ m.id }}" class="d-none mt-3">
+        <button class="btn btn-warning btn-lg fw-bold" onclick="completeModule({{ m.id }}, window['scScore{{ m.id }}'] || 0, {{ loop.index0 }})">
+          Continue <i class="bi bi-arrow-right ms-1"></i>
+        </button>
+      </div>
+
+      <!-- ── DRAG & DROP renderer ─────────────────────────────────── -->
+      {% elif m.type == 'dragdrop' %}
+      <p class="text-light mb-3">{{ m.content.get('instruction','Drag each item to the correct category.') }}</p>
+      <div class="dragdrop-layout" id="dd-{{ m.id }}">
+        <!-- Items bank -->
+        <div class="dd-bank mb-3">
+          <div class="text-muted small mb-2">Items — drag these into the boxes below</div>
+          <div class="dd-items-container" id="dd-items-{{ m.id }}">
+            {% for item in m.content.get('items', []) %}
+            <div class="dd-item" draggable="true" data-correct-cat="{{ item.category }}"
+              ondragstart="ddDragStart(event)" id="dditem-{{ m.id }}-{{ loop.index0 }}">
+              {{ item.text }}
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        <!-- Drop zones -->
+        <div class="dd-zones">
+          {% for cat in m.content.get('categories', []) %}
+          <div class="dd-zone" data-cat="{{ cat }}"
+            ondragover="event.preventDefault()" ondrop="ddDrop(event, '{{ m.id }}')">
+            <div class="dd-zone-label">{{ cat }}</div>
+            <div class="dd-zone-items" id="ddzone-{{ m.id }}-{{ cat }}"></div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="mt-3 d-flex gap-3 align-items-center">
+        <button class="btn btn-warning btn-lg fw-bold" onclick="submitDragDrop('{{ m.id }}', {{ m.id }}, {{ loop.index0 }}, {{ m.pass_score }})">
+          <i class="bi bi-check2-all me-1"></i>Check Answers
+        </button>
+        <button class="btn btn-outline-secondary btn-sm" onclick="resetDragDrop('{{ m.id }}')">Reset</button>
+      </div>
+      <div id="dd-result-{{ m.id }}" class="mt-3"></div>
+
+      {% endif %}
+    </div>
+    {% endfor %}
+
+    <!-- ── COMPLETION SCREEN ─────────────────────────────────────── -->
+    <div class="module-panel d-none" id="panel-complete">
+      <div class="text-center py-5">
+        <div style="font-size:5rem">🏅</div>
+        <h2 class="fw-bold text-warning mt-3">Course Complete!</h2>
+        <p class="text-muted">You've finished <strong class="text-white">{{ course.name }}</strong></p>
+        <div class="d-flex justify-content-center gap-3 my-4">
+          <div class="stat-pill"><span class="text-muted small">XP EARNED</span><span class="fs-2 fw-bold text-warning" id="final-xp">–</span></div>
+          <div class="stat-pill"><span class="text-muted small">MODULES</span><span class="fs-2 fw-bold text-info">{{ course.modules | length }}</span></div>
+        </div>
+        <canvas id="course-confetti" style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999"></canvas>
+        <div class="d-flex justify-content-center gap-3">
+          <a href="{{ url_for('courses.catalog') }}" class="btn btn-outline-warning btn-lg">More Courses</a>
+          <a href="{{ url_for('main.dashboard') }}" class="btn btn-warning btn-lg fw-bold">Dashboard</a>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- Floating XP animation container -->
+<div id="xp-float-container" style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:500"></div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+<script>
+const MODULES    = {{ course.modules | tojson }};
+const COURSE_ID  = {{ course.id }};
+const COURSE_COLOR = '{{ course.thumbnail_color }}';
+let currentIdx   = 0;
+let totalXP      = {{ progress.xp_earned }};
+let doneIds      = new Set({{ (progress.module_progress | selectattr('is_completed','equalto',true) | map(attribute='module_id') | list) | tojson }});
+
+// ── Navigation ─────────────────────────────────────────────────────
+function gotoModule(idx) {
+  document.querySelectorAll('.module-panel').forEach(p => p.classList.add('d-none'));
+  document.querySelectorAll('.sidebar-item').forEach(b => b.classList.remove('active'));
+  const panel = document.getElementById(`panel-${idx}`);
+  if (panel) { panel.classList.remove('d-none'); panel.classList.add('module-enter'); setTimeout(() => panel.classList.remove('module-enter'), 500); }
+  const sb = document.getElementById(`sb-${MODULES[idx]?.id}`);
+  if (sb) sb.classList.add('active');
+  currentIdx = idx;
+}
+
+// ── Lesson complete ────────────────────────────────────────────────
+async function completeModule(moduleId, score, panelIdx) {
+  const result = await apiComplete(moduleId, score);
+  if (result.xp_gained > 0) floatXP(`+${result.xp_gained} XP`);
+  markDone(moduleId, result.xp_gained);
+  if (result.course_completed) { showCourseComplete(result); return; }
+  const next = panelIdx + 1;
+  if (next < MODULES.length) setTimeout(() => gotoModule(next), 600);
+  else showCourseComplete(result);
+}
+
+async function apiComplete(moduleId, score) {
+  const resp = await fetch(`/courses/${COURSE_ID}/modules/${moduleId}/complete`, {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({score}),
+  });
+  return resp.json();
+}
+
+function markDone(moduleId, xpGained) {
+  doneIds.add(moduleId);
+  totalXP += xpGained;
+  const xpEl = document.getElementById('hud-xp');
+  if (xpEl) xpEl.textContent = totalXP;
+  const sb = document.getElementById(`sb-${moduleId}`);
+  if (sb) {
+    sb.classList.add('done');
+    sb.querySelector('.sb-status').innerHTML = '<i class="bi bi-check-circle-fill text-success"></i>';
+  }
+  // Update progress bar
+  const pct = Math.round(doneIds.size / MODULES.length * 100);
+  document.getElementById('sb-bar').style.width = pct + '%';
+  document.getElementById('sb-pct').textContent = pct + '%';
+}
+
+// ── Quiz logic ─────────────────────────────────────────────────────
+const quizAnswers = {};
+
+function selectQuizOption(btn, moduleId, qIdx) {
+  const key = `${moduleId}-${qIdx}`;
+  const container = document.getElementById(`qopts-${moduleId}-${qIdx}`);
+  container.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  quizAnswers[key] = btn.dataset.value;
+}
+
+async function submitQuiz(moduleIdStr, moduleId, panelIdx, passScore) {
+  const questions = MODULES.find(m => m.id === moduleId)?.content?.questions || [];
+  let correct = 0;
+  questions.forEach((q, i) => {
+    const chosen = quizAnswers[`${moduleId}-${i}`];
+    const isCorrect = chosen === q.correct;
+    if (isCorrect) correct++;
+    // Show feedback per question
+    const container = document.getElementById(`qopts-${moduleId}-${i}`);
+    container.querySelectorAll('.option-btn').forEach(btn => {
+      btn.disabled = true;
+      if (btn.dataset.value === q.correct) btn.classList.add('correct');
+      else if (btn.dataset.value === chosen && !isCorrect) btn.classList.add('wrong');
+    });
+    const fb = document.getElementById(`qf-${moduleId}-${i}`);
+    fb.classList.remove('d-none');
+    fb.innerHTML = isCorrect
+      ? `<div class="alert alert-success py-2 small"><i class="bi bi-check-circle-fill me-2"></i>${q.explanation || 'Correct!'}</div>`
+      : `<div class="alert alert-danger py-2 small"><i class="bi bi-x-circle-fill me-2"></i>Incorrect. ${q.explanation || 'The correct answer was ' + q.correct.toUpperCase() + '.'}</div>`;
+  });
+  const score = Math.round(correct / questions.length * 100);
+  const passed = score >= passScore;
+  const resultEl = document.getElementById(`quiz-result-${moduleId}`);
+  resultEl.innerHTML = passed
+    ? `<div class="alert alert-success"><i class="bi bi-trophy-fill me-2"></i><strong>${score}% — Passed!</strong> You answered ${correct}/${questions.length} correctly.</div>`
+    : `<div class="alert alert-warning"><i class="bi bi-arrow-repeat me-2"></i><strong>${score}% — Try again!</strong> You need ${passScore}% to pass. Review the answers above.</div>`;
+
+  if (passed) {
+    const result = await apiComplete(moduleId, score);
+    if (result.xp_gained > 0) floatXP(`+${result.xp_gained} XP`);
+    markDone(moduleId, result.xp_gained);
+    resultEl.innerHTML += `<button class="btn btn-warning fw-bold mt-2" onclick="gotoModule(${panelIdx + 1})">Continue <i class="bi bi-arrow-right ms-1"></i></button>`;
+    if (result.course_completed) showCourseComplete(result);
+  }
+}
+
+// ── Scenario logic ─────────────────────────────────────────────────
+async function pickScenarioChoice(btn, moduleId, panelIdx) {
+  const container = document.getElementById(`sc-${moduleId}`);
+  container.querySelectorAll('.scenario-choice-btn').forEach(b => { b.disabled = true; b.classList.remove('hover'); });
+  const isCorrect = btn.dataset.correct === 'true';
+  btn.classList.add(isCorrect ? 'correct' : 'wrong');
+  const outcomeEl = document.getElementById(`sc-outcome-${moduleId}`);
+  outcomeEl.innerHTML = isCorrect
+    ? `<div class="alert alert-success"><i class="bi bi-check-circle-fill me-2"></i><strong>Good choice!</strong> ${btn.dataset.outcome}</div>`
+    : `<div class="alert alert-danger"><i class="bi bi-x-circle-fill me-2"></i><strong>Not ideal.</strong> ${btn.dataset.outcome}</div>`;
+  const score = isCorrect ? 100 : 30;
+  window[`scScore${moduleId}`] = score;
+  document.getElementById(`sc-next-${moduleId}`).classList.remove('d-none');
+  const result = await apiComplete(moduleId, score);
+  if (result.xp_gained > 0) floatXP(`+${result.xp_gained} XP`);
+  markDone(moduleId, result.xp_gained);
+  if (result.course_completed) setTimeout(() => showCourseComplete(result), 1000);
+}
+
+// ── Drag & Drop logic ──────────────────────────────────────────────
+let ddDragging = null;
+
+function ddDragStart(e) { ddDragging = e.target; e.dataTransfer.effectAllowed = 'move'; }
+
+function ddDrop(e, moduleId) {
+  e.preventDefault();
+  if (!ddDragging) return;
+  const zone = e.currentTarget.querySelector('.dd-zone-items');
+  if (zone) {
+    zone.appendChild(ddDragging);
+    ddDragging.classList.add('placed');
+  }
+  ddDragging = null;
+}
+
+function resetDragDrop(moduleId) {
+  const bank = document.getElementById(`dd-items-${moduleId}`);
+  document.querySelectorAll(`[id^="ddzone-${moduleId}-"]`).forEach(zone => {
+    while (zone.firstChild) { zone.firstChild.classList.remove('placed','correct','wrong'); bank.appendChild(zone.firstChild); }
+  });
+  document.getElementById(`dd-result-${moduleId}`).innerHTML = '';
+}
+
+async function submitDragDrop(moduleIdStr, moduleId, panelIdx, passScore) {
+  const module = MODULES.find(m => m.id === moduleId);
+  const items = module?.content?.items || [];
+  let correct = 0;
+  // Check each placed item
+  document.querySelectorAll(`[id^="ddzone-${moduleIdStr}-"]`).forEach(zone => {
+    const cat = zone.id.replace(`ddzone-${moduleIdStr}-`, '');
+    zone.querySelectorAll('.dd-item').forEach(item => {
+      const isOk = item.dataset.correctCat === cat;
+      item.classList.add(isOk ? 'correct' : 'wrong');
+      if (isOk) correct++;
+    });
+  });
+  const total = document.querySelectorAll(`#dd-items-${moduleIdStr} .dd-item, [id^="ddzone-${moduleIdStr}-"] .dd-item`).length;
+  const placed = total - document.querySelectorAll(`#dd-items-${moduleIdStr} .dd-item`).length;
+  const score = total > 0 ? Math.round(correct / items.length * 100) : 0;
+  const passed = score >= passScore && placed === items.length;
+  const resultEl = document.getElementById(`dd-result-${moduleIdStr}`);
+  resultEl.innerHTML = passed
+    ? `<div class="alert alert-success"><i class="bi bi-trophy-fill me-2"></i><strong>${score}% — Passed!</strong></div><button class="btn btn-warning fw-bold" onclick="completeModule(${moduleId}, ${score}, ${panelIdx})">Continue <i class="bi bi-arrow-right ms-1"></i></button>`
+    : `<div class="alert alert-warning"><i class="bi bi-arrow-repeat me-2"></i><strong>${score}% — Try again!</strong> You need ${passScore}% to pass.</div>`;
+
+  if (passed) {
+    const result = await apiComplete(moduleId, score);
+    if (result.xp_gained > 0) floatXP(`+${result.xp_gained} XP`);
+    markDone(moduleId, result.xp_gained);
+    if (result.course_completed) showCourseComplete(result);
+  }
+}
+
+// ── Course complete ────────────────────────────────────────────────
+function showCourseComplete(result) {
+  document.querySelectorAll('.module-panel').forEach(p => p.classList.add('d-none'));
+  document.getElementById('panel-complete').classList.remove('d-none');
+  document.getElementById('final-xp').textContent = totalXP;
+  const canvas = document.getElementById('course-confetti');
+  const myConfetti = confetti.create(canvas, {resize:true});
+  const end = Date.now() + 3000;
+  (function frame() {
+    myConfetti({particleCount:5, angle:60, spread:55, origin:{x:0}, colors:['#ffc107','#0dcaf0','#198754']});
+    myConfetti({particleCount:5, angle:120, spread:55, origin:{x:1}, colors:['#ffc107','#dc3545','#6f42c1']});
+    if (Date.now() < end) requestAnimationFrame(frame);
+  })();
+}
+
+// ── Floating XP ────────────────────────────────────────────────────
+function floatXP(label) {
+  const container = document.getElementById('xp-float-container');
+  const el = document.createElement('div');
+  el.className = 'float-pts';
+  el.textContent = label;
+  el.style.left = '50%'; el.style.top = '20%';
+  container.appendChild(el);
+  setTimeout(() => el.remove(), 1800);
+}
+</script>
+{% endblock %}

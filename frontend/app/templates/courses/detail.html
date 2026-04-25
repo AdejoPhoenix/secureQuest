@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block title %}{{ course.name }}{% endblock %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-lg-8">
+    <div class="card bg-dark border-secondary mb-4">
+      <div style="background:{{ course.thumbnail_color }};height:6px;border-radius:.375rem .375rem 0 0"></div>
+      <div class="card-body p-4">
+        <div class="d-flex gap-2 mb-3">
+          <span class="badge bg-secondary">{{ course.category | replace('_',' ') | title }}</span>
+          <span class="badge difficulty-{{ course.difficulty }}">{{ course.difficulty | upper }}</span>
+        </div>
+        <h2 class="fw-bold text-white">{{ course.name }}</h2>
+        <p class="text-light">{{ course.description or '' }}</p>
+
+        <!-- Stats row -->
+        <div class="row g-2 mb-4">
+          <div class="col-4">
+            <div class="text-center p-3 rounded" style="background:rgba(255,255,255,.05)">
+              <div class="fs-4 fw-bold text-warning">{{ course.module_count }}</div>
+              <div class="text-muted small">Modules</div>
+            </div>
+          </div>
+          <div class="col-4">
+            <div class="text-center p-3 rounded" style="background:rgba(255,255,255,.05)">
+              <div class="fs-4 fw-bold text-info">{{ course.enrolled }}</div>
+              <div class="text-muted small">Learners</div>
+            </div>
+          </div>
+          <div class="col-4">
+            <div class="text-center p-3 rounded" style="background:rgba(255,255,255,.05)">
+              <div class="fs-4 fw-bold" style="color:{{ course.thumbnail_color }}">{{ course.xp_reward }}</div>
+              <div class="text-muted small">XP on Completion</div>
+            </div>
+          </div>
+        </div>
+
+        {% if progress and progress.is_completed %}
+        <div class="alert alert-success d-flex align-items-center gap-3">
+          <i class="bi bi-patch-check-fill fs-3"></i>
+          <div>
+            <strong>Course Completed!</strong> You earned <strong>{{ progress.xp_earned }} XP</strong>.
+          </div>
+        </div>
+        {% elif progress %}
+        <div class="mb-3">
+          <div class="d-flex justify-content-between small text-muted mb-1">
+            <span>Progress</span><span>{{ progress.completed_modules }}/{{ progress.total_modules }} modules</span>
+          </div>
+          <div class="progress" style="height:10px;border-radius:5px">
+            <div class="progress-bar" style="width:{{ progress.progress_pct }}%;background:{{ course.thumbnail_color }}"></div>
+          </div>
+        </div>
+        <a href="{{ url_for('courses.learn', course_id=course.id) }}" class="btn btn-lg fw-bold w-100" style="background:{{ course.thumbnail_color }};color:#000">
+          <i class="bi bi-play-fill me-1"></i>Continue Learning
+        </a>
+        {% else %}
+        <form method="POST" action="{{ url_for('courses.enroll', course_id=course.id) }}">
+          <button type="submit" class="btn btn-lg fw-bold w-100" style="background:{{ course.thumbnail_color }};color:#000">
+            <i class="bi bi-mortarboard me-2"></i>Enrol & Start Learning
+          </button>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Modules preview -->
+    <div class="card bg-dark border-secondary">
+      <div class="card-header border-secondary"><h6 class="mb-0 fw-bold text-white">What you'll learn</h6></div>
+      <div class="list-group list-group-flush">
+        {% for m in course.modules %}
+        {% set done = progress and (progress.module_progress | selectattr('module_id','equalto',m.id) | selectattr('is_completed','equalto',true) | list | length > 0) %}
+        <div class="list-group-item bg-dark border-secondary d-flex align-items-center gap-3">
+          <div class="module-type-icon type-icon-{{ m.type }}">
+            <i class="bi bi-{{ 'file-text' if m.type=='lesson' else 'question-circle' if m.type=='quiz' else 'diagram-3' if m.type=='scenario' else 'arrows-move' }}"></i>
+          </div>
+          <div class="flex-grow-1">
+            <div class="text-white small fw-semibold">{{ m.title }}</div>
+            <div class="d-flex gap-2 mt-1">
+              <span class="badge module-badge-{{ m.type }}" style="font-size:.62rem">{{ m.type | upper }}</span>
+              <span class="text-muted" style="font-size:.72rem"><i class="bi bi-star me-1"></i>{{ m.xp_reward }} XP</span>
+            </div>
+          </div>
+          {% if done %}
+          <i class="bi bi-check-circle-fill text-success fs-5"></i>
+          {% elif not m.is_required %}
+          <span class="text-muted small">Optional</span>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Sidebar -->
+  <div class="col-lg-4">
+    <div class="card bg-dark border-secondary">
+      <div class="card-body">
+        <h6 class="fw-bold text-white mb-3">Course includes</h6>
+        {% set types = course.modules | map(attribute='type') | list %}
+        <ul class="list-unstyled text-muted small">
+          {% if 'lesson' in types %}<li class="mb-2"><i class="bi bi-file-text text-warning me-2"></i>Reading lessons</li>{% endif %}
+          {% if 'quiz' in types %}<li class="mb-2"><i class="bi bi-question-circle text-info me-2"></i>Knowledge quizzes</li>{% endif %}
+          {% if 'scenario' in types %}<li class="mb-2"><i class="bi bi-diagram-3 text-success me-2"></i>Real-world scenarios</li>{% endif %}
+          {% if 'dragdrop' in types %}<li class="mb-2"><i class="bi bi-arrows-move text-danger me-2"></i>Drag & drop exercises</li>{% endif %}
+          <li class="mb-2"><i class="bi bi-award text-warning me-2"></i>{{ course.xp_reward }} XP completion reward</li>
+          <li><i class="bi bi-infinity text-muted me-2"></i>Unlimited attempts</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

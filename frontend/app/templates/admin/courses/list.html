@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Manage Courses{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h4 class="fw-bold text-white mb-0"><i class="bi bi-book-fill text-warning me-2"></i>Training Courses</h4>
+    <p class="text-muted small mb-0">Create and manage interactive learning courses</p>
+  </div>
+  <a href="{{ url_for('admin.create_course') }}" class="btn btn-warning fw-bold">
+    <i class="bi bi-plus-lg me-1"></i>New Course
+  </a>
+</div>
+
+{% if courses %}
+<div class="row g-3">
+  {% for c in courses %}
+  <div class="col-md-6 col-xl-4">
+    <div class="card bg-dark border-secondary h-100">
+      <!-- Coloured header strip -->
+      <div class="course-card-header" style="background:{{ c.thumbnail_color }};height:6px;border-radius:.375rem .375rem 0 0"></div>
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start mb-2">
+          <span class="badge bg-secondary">{{ c.category | replace('_',' ') | title }}</span>
+          {% if c.is_published %}
+          <span class="badge bg-success"><i class="bi bi-broadcast me-1"></i>Published</span>
+          {% else %}
+          <span class="badge bg-secondary"><i class="bi bi-pencil me-1"></i>Draft</span>
+          {% endif %}
+        </div>
+        <h6 class="fw-bold text-white mb-1">{{ c.name }}</h6>
+        <p class="text-muted small mb-3">{{ c.description | truncate(80) if c.description else '—' }}</p>
+        <div class="d-flex gap-3 text-muted small mb-3">
+          <span><i class="bi bi-layers me-1"></i>{{ c.module_count }} modules</span>
+          <span><i class="bi bi-people me-1"></i>{{ c.enrolled }} enrolled</span>
+          <span><i class="bi bi-star me-1"></i>{{ c.xp_reward }} XP</span>
+        </div>
+      </div>
+      <div class="card-footer border-secondary bg-transparent d-flex gap-2">
+        <a href="{{ url_for('admin.edit_course', course_id=c.id) }}" class="btn btn-sm btn-outline-primary flex-grow-1">
+          <i class="bi bi-pencil me-1"></i>Edit
+        </a>
+        <a href="{{ url_for('admin.course_analytics', course_id=c.id) }}" class="btn btn-sm btn-outline-info">
+          <i class="bi bi-graph-up"></i>
+        </a>
+        <form method="POST" action="{{ url_for('admin.delete_course', course_id=c.id) }}"
+          onsubmit="return confirm('Delete \'{{ c.name }}\'?')">
+          <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+        </form>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="text-center text-muted py-5">
+  <i class="bi bi-book fs-1 d-block mb-3 text-secondary"></i>
+  <h5 class="text-secondary">No courses yet</h5>
+  <a href="{{ url_for('admin.create_course') }}" class="btn btn-warning mt-2">Create your first course</a>
+</div>
+{% endif %}
+{% endblock %}

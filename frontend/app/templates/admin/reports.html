@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}Performance Reports{% endblock %}
+{% block content %}
+<h4 class="fw-bold text-white mb-4"><i class="bi bi-graph-up-arrow text-warning me-2"></i>Performance Reports</h4>
+
+<!-- Summary cards -->
+{% if report %}
+{% set total_users = report | length %}
+{% set avg_accuracy = (report | map(attribute='accuracy_pct') | sum / total_users) | round(1) %}
+{% set total_pts = report | map(attribute='total_score') | sum %}
+<div class="row g-3 mb-4">
+  <div class="col-sm-4">
+    <div class="card bg-dark border-info">
+      <div class="card-body text-center">
+        <div class="fs-2 fw-bold text-info">{{ total_users }}</div>
+        <div class="text-muted small">Players Tracked</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-4">
+    <div class="card bg-dark border-success">
+      <div class="card-body text-center">
+        <div class="fs-2 fw-bold text-success">{{ avg_accuracy }}%</div>
+        <div class="text-muted small">Avg. Accuracy</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-4">
+    <div class="card bg-dark border-warning">
+      <div class="card-body text-center">
+        <div class="fs-2 fw-bold text-warning">{{ total_pts }}</div>
+        <div class="text-muted small">Total Points Earned</div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- User Performance Table -->
+<div class="card bg-dark border-secondary mb-4">
+  <div class="card-header border-secondary">
+    <h6 class="mb-0 fw-bold text-white">User Performance Summary</h6>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-dark table-hover mb-0">
+        <thead class="border-secondary">
+          <tr>
+            <th class="text-muted">User</th>
+            <th class="text-muted text-center">Score</th>
+            <th class="text-muted text-center">Joined</th>
+            <th class="text-muted text-center">Completed</th>
+            <th class="text-muted text-center">Avg Score</th>
+            <th class="text-muted text-center">Correct</th>
+            <th class="text-muted text-center">Accuracy</th>
+            <th class="text-muted text-center">Best Rank</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in report | sort(attribute='total_score', reverse=true) %}
+          <tr>
+            <td class="fw-semibold text-white">{{ r.username }}<br><span class="text-muted small">{{ r.email }}</span></td>
+            <td class="text-center text-warning fw-bold">{{ r.total_score }}</td>
+            <td class="text-center text-muted">{{ r.tournaments_joined }}</td>
+            <td class="text-center text-muted">{{ r.tournaments_completed }}</td>
+            <td class="text-center text-muted">{{ r.avg_score }}</td>
+            <td class="text-center text-muted">{{ r.correct_answers }}/{{ r.total_answers }}</td>
+            <td class="text-center">
+              <span class="badge {% if r.accuracy_pct >= 80 %}bg-success{% elif r.accuracy_pct >= 50 %}bg-warning text-dark{% else %}bg-danger{% endif %}">
+                {{ r.accuracy_pct }}%
+              </span>
+            </td>
+            <td class="text-center text-muted">{{ r.best_rank or '—' }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="8" class="text-center text-muted py-5">No user data available.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Tournament Reports -->
+{% if tournaments %}
+<div class="card bg-dark border-secondary">
+  <div class="card-header border-secondary">
+    <h6 class="mb-0 fw-bold text-white">Tournament Reports</h6>
+  </div>
+  <div class="list-group list-group-flush">
+    {% for t in tournaments %}
+    <a href="{{ url_for('admin.tournament_report', tournament_id=t.id) }}"
+      class="list-group-item list-group-item-action bg-dark border-secondary d-flex justify-content-between align-items-center">
+      <div>
+        <span class="text-white fw-semibold">{{ t.name }}</span>
+        <span class="badge difficulty-{{ t.difficulty }} ms-2">{{ t.difficulty }}</span>
+      </div>
+      <div class="text-muted small">
+        {{ t.participant_count }} players · {{ t.challenges | length }} challenges
+        <i class="bi bi-arrow-right ms-2"></i>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}
