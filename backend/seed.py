@@ -1,14 +1,21 @@
 """
 Seed script — creates an admin user and a sample tournament with challenges.
 Run: python seed.py
+
+Requires migrations to have been applied first:
+    python migrate.py upgrade
 """
-from app.database import SessionLocal, engine, Base
+from sqlalchemy import inspect
+from app.database import SessionLocal, engine
 from app.models.user import User, UserRole, SSOProvider
 from app.models.tournament import Tournament, Challenge, Difficulty, ChallengeType
 from app.auth.jwt import hash_password
 import app.models  # noqa
 
-Base.metadata.create_all(bind=engine)
+if not inspect(engine).has_table("users"):
+    print("Error: 'users' table not found. Run migrations first: python migrate.py upgrade")
+    raise SystemExit(1)
+
 db = SessionLocal()
 
 # Admin user
