@@ -182,6 +182,55 @@ h3.sub   { font-size: clamp(1.1rem, 2vw, 1.5rem); font-weight: 600; line-height:
 
 /* ── Keyboard hint ────────────────────────────────────────────────── */
 .kbd { display: inline-block; padding: .1rem .4rem; border: 1px solid var(--sq-border); border-radius: .3rem; font-size: .7rem; color: var(--sq-muted); }
+
+/* ══════════════════════════════════════════════════════════════════
+   RESPONSIVE — tablet ≤ 900px  ·  mobile ≤ 576px
+════════════════════════════════════════════════════════════════════ */
+
+/* Grid shorthand classes — applied in HTML; breakpoints override via !important */
+
+@media (max-width: 900px) {
+  .slide { padding: 2.5rem 3rem 5rem; }
+  .g4    { grid-template-columns: 1fr 1fr !important; }
+  .g5    { grid-template-columns: repeat(3, 1fr) !important; }
+}
+
+@media (max-width: 576px) {
+  .slide {
+    padding: 1.25rem 1rem 5.5rem;
+    align-items: flex-start;
+    overflow-y: auto;
+  }
+  h1.hero  { font-size: clamp(1.9rem, 7vw, 2.8rem); }
+  h2.title { font-size: clamp(1.5rem, 6vw, 2rem);   }
+  h3.sub   { font-size: 1rem; }
+  .label   { font-size: .65rem; }
+
+  /* All multi-col grids collapse */
+  .g2, .g3 { grid-template-columns: 1fr !important; }
+  .g4, .g5 { grid-template-columns: 1fr 1fr !important; }
+
+  /* Stat strip (slide 7) wraps */
+  .stat-strip {
+    flex-wrap: wrap !important;
+    gap: .75rem !important;
+    justify-content: center !important;
+    padding: 1rem !important;
+  }
+  .stat-strip > div { flex: 1 1 40%; }
+  .stat-strip-sep   { display: none; }
+
+  /* Deployment timeline wraps */
+  .timeline         { flex-wrap: wrap; justify-content: center; }
+  .tl-step          { flex: 0 0 30%; min-width: 64px; margin-bottom: .5rem; }
+  .tl-step::before  { display: none; }
+
+  /* Nav bar — hide keyboard hint, shrink dots */
+  .nav-hint         { display: none; }
+  .nav-sep          { display: none; }
+  .dot              { width: 5px; height: 5px; }
+  .nav-bar          { padding: .4rem .9rem; gap: .6rem; }
+}
 </style>
 </head>
 <body>
@@ -230,7 +279,7 @@ h3.sub   { font-size: clamp(1.1rem, 2vw, 1.5rem); font-weight: 600; line-height:
     <div style="max-width:1000px;width:100%">
       <div class="label anim anim-1">The Threat Reality</div>
       <h2 class="title anim anim-1">Fintech is the<br><span class="glow-red">#1 Targeted Sector</span></h2>
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1.25rem;margin-top:2.5rem">
+      <div class="g4" style="display:grid;grid-template-columns:repeat(4,1fr);gap:1.25rem;margin-top:2.5rem">
         <div class="glass glass-red anim anim-2" style="text-align:center;padding:1.5rem 1rem">
           <div class="stat-num glow-red">88%</div>
           <div class="stat-label">of breaches involve<br>human error</div>
@@ -269,7 +318,7 @@ h3.sub   { font-size: clamp(1.1rem, 2vw, 1.5rem); font-weight: 600; line-height:
     <div style="max-width:1000px;width:100%">
       <div class="label anim anim-1">Regulatory Landscape</div>
       <h2 class="title anim anim-1">Training Isn't Optional —<br><span class="glow-blue">It's a Legal Requirement</span></h2>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-top:2rem">
+      <div class="g2" style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-top:2rem">
         <div class="glass glass-blue anim anim-2" style="display:flex;gap:1rem">
           <div style="font-size:1.8rem;flex-shrink:0">🏛️</div>
           <div>
@@ -314,7 +363,7 @@ h3.sub   { font-size: clamp(1.1rem, 2vw, 1.5rem); font-weight: 600; line-height:
     <div style="max-width:1000px;width:100%">
       <div class="label anim anim-1">The Problem with Today's Approach</div>
       <h2 class="title anim anim-1">The Annual Compliance<br>Video <span class="glow-red">Doesn't Work</span></h2>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:2rem">
+      <div class="g2" style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:2rem">
         <div class="anim anim-2">
           <table class="vs-table">
             <thead><tr><th>Traditional Training</th><th></th></tr></thead>
@@ -362,7 +411,7 @@ h3.sub   { font-size: clamp(1.1rem, 2vw, 1.5rem); font-weight: 600; line-height:
       <p class="anim anim-3" style="font-size:1.15rem;color:var(--sq-muted);margin-bottom:2.5rem;max-width:680px;margin-inline:auto;line-height:1.7">
         A gamified, cloud-based security awareness platform that transforms mandatory training into an engaging experience employees actually want to complete.
       </p>
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1.25rem">
+      <div class="g3" style="display:grid;grid-template-columns:repeat(3,1fr);gap:1.25rem">
         <div class="glass glass-yellow anim anim-3" style="padding:2rem 1.5rem">
           <div style="font-size:2.5rem;margin-bottom:.75rem">🎮</div>
           <div style="font-weight:700;font-size:1.1rem;margin-bottom:.5rem">Gamified Learning</div>
@@ -389,7 +438,7 @@ h3.sub   { font-size: clamp(1.1rem, 2vw, 1.5rem); font-weight: 600; line-height:
     <div style="max-width:1000px;width:100%">
       <div class="label anim anim-1">How It Works</div>
       <h2 class="title anim anim-1">Four Pillars of the<br><span class="glow-yellow">SecureQuest Platform</span></h2>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-top:2rem">
+      <div class="g2" style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-top:2rem">
         <div class="glass anim anim-2" style="display:flex;gap:1rem">
           <div style="width:48px;height:48px;border-radius:.6rem;background:rgba(255,193,7,.15);display:flex;align-items:center;justify-content:center;font-size:1.4rem;flex-shrink:0">📚</div>
           <div>
@@ -430,7 +479,7 @@ h3.sub   { font-size: clamp(1.1rem, 2vw, 1.5rem); font-weight: 600; line-height:
     <div style="max-width:1000px;width:100%">
       <div class="label anim anim-1">Learning Experience</div>
       <h2 class="title anim anim-1">Four Ways to<br><span class="glow-yellow">Learn by Doing</span></h2>
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-top:2rem">
+      <div class="g4" style="display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-top:2rem">
         <div class="glass anim anim-2" style="padding:1.5rem 1rem">
           <div style="font-size:2rem;margin-bottom:.75rem">📖</div>
           <div style="font-weight:700;color:var(--sq-yellow);margin-bottom:.5rem;font-size:.95rem">VIDEO LESSONS</div>
@@ -452,13 +501,13 @@ h3.sub   { font-size: clamp(1.1rem, 2vw, 1.5rem); font-weight: 600; line-height:
           <div style="font-size:.8rem;color:var(--sq-muted);line-height:1.6">Hands-on classification exercises: sort phishing vs legitimate emails, categorise malware types, map security responsibilities.</div>
         </div>
       </div>
-      <div class="glass anim anim-6" style="margin-top:1.25rem;display:flex;align-items:center;gap:2rem;padding:1.25rem 1.75rem;justify-content:space-around">
+      <div class="glass stat-strip anim anim-6" style="margin-top:1.25rem;display:flex;align-items:center;gap:2rem;padding:1.25rem 1.75rem;justify-content:space-around">
         <div style="text-align:center"><div class="stat-num glow-yellow" style="font-size:2rem">4×</div><div style="font-size:.75rem;color:var(--sq-muted)">Better retention than video-only</div></div>
-        <div style="width:1px;height:40px;background:var(--sq-border)"></div>
+        <div class="stat-strip-sep" style="width:1px;height:40px;background:var(--sq-border)"></div>
         <div style="text-align:center"><div class="stat-num glow-blue" style="font-size:2rem">83%</div><div style="font-size:.75rem;color:var(--sq-muted)">Average course completion rate</div></div>
-        <div style="width:1px;height:40px;background:var(--sq-border)"></div>
+        <div class="stat-strip-sep" style="width:1px;height:40px;background:var(--sq-border)"></div>
         <div style="text-align:center"><div class="stat-num glow-green" style="font-size:2rem">67%</div><div style="font-size:.75rem;color:var(--sq-muted)">Reduction in phishing click rate</div></div>
-        <div style="width:1px;height:40px;background:var(--sq-border)"></div>
+        <div class="stat-strip-sep" style="width:1px;height:40px;background:var(--sq-border)"></div>
         <div style="text-align:center"><div class="stat-num" style="font-size:2rem;color:var(--sq-orange)">+91</div><div style="font-size:.75rem;color:var(--sq-muted)">Average NPS score from employees</div></div>
       </div>
     </div>
@@ -472,7 +521,7 @@ h3.sub   { font-size: clamp(1.1rem, 2vw, 1.5rem); font-weight: 600; line-height:
     <div style="max-width:1000px;width:100%">
       <div class="label anim anim-1">Content Library</div>
       <h2 class="title anim anim-1">10 Courses Built for<br><span class="glow-blue">Fintech Realities</span></h2>
-      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:.75rem;margin-top:2rem">
+      <div class="g5" style="display:grid;grid-template-columns:repeat(5,1fr);gap:.75rem;margin-top:2rem">
         {% set courses = [
           ('#dc3545','🎣','Phishing Awareness','Easy'),
           ('#198754','🔑','Password Security','Easy'),
@@ -509,7 +558,7 @@ h3.sub   { font-size: clamp(1.1rem, 2vw, 1.5rem); font-weight: 600; line-height:
     <div style="max-width:1000px;width:100%">
       <div class="label anim anim-1">Engagement Engine</div>
       <h2 class="title anim anim-1">Security Tournaments<br><span class="glow-yellow">Make Defence Competitive</span></h2>
-      <div style="display:grid;grid-template-columns:1fr 1.2fr;gap:2rem;margin-top:2rem;align-items:start">
+      <div class="g2" style="display:grid;grid-template-columns:1fr 1.2fr;gap:2rem;margin-top:2rem;align-items:start">
         <div>
           <ul class="feat-list">
             <li class="anim anim-2"><span class="icon" style="color:var(--sq-yellow)">🏆</span><div><strong>Time-limited tournaments</strong> create urgency and company-wide buzz — perfect for Cyber Awareness Month, new-joiner onboarding, or post-incident refreshers.</div></li>
@@ -549,7 +598,7 @@ h3.sub   { font-size: clamp(1.1rem, 2vw, 1.5rem); font-weight: 600; line-height:
     <div style="max-width:1000px;width:100%">
       <div class="label anim anim-1">Admin Intelligence</div>
       <h2 class="title anim anim-1">Know Your Risk.<br><span class="glow-green">Prove Your Compliance.</span></h2>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:2rem">
+      <div class="g2" style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:2rem">
         <div>
           <ul class="feat-list anim anim-2">
             <li><span class="icon" style="color:var(--sq-green)"><i class="bi bi-check-circle-fill"></i></span><div><strong>Per-module pass rates</strong> — identify which topics your team struggles with most.</div></li>
@@ -589,7 +638,7 @@ h3.sub   { font-size: clamp(1.1rem, 2vw, 1.5rem); font-weight: 600; line-height:
     <div style="max-width:1000px;width:100%">
       <div class="label anim anim-1">Implementation</div>
       <h2 class="title anim anim-1">Live in <span class="glow-blue">48 Hours</span>,<br>Not 6 Months</h2>
-      <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:2rem;margin-top:2rem;align-items:start">
+      <div class="g2" style="display:grid;grid-template-columns:1.2fr 1fr;gap:2rem;margin-top:2rem;align-items:start">
         <div>
           <div style="margin-bottom:1.5rem">
             <div class="timeline anim anim-2">
@@ -638,7 +687,7 @@ h3.sub   { font-size: clamp(1.1rem, 2vw, 1.5rem); font-weight: 600; line-height:
     <div style="max-width:1000px;width:100%">
       <div class="label anim anim-1">Business Case</div>
       <h2 class="title anim anim-1">The Numbers<br><span class="glow-yellow">Speak for Themselves</span></h2>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:2rem">
+      <div class="g2" style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:2rem">
         <div>
           <div class="glass glass-red anim anim-2" style="padding:1.5rem;margin-bottom:1rem">
             <div style="font-size:.75rem;font-weight:700;color:var(--sq-red);text-transform:uppercase;letter-spacing:.08em;margin-bottom:1rem">Cost of NOT Training (100 employees)</div>
@@ -680,7 +729,7 @@ h3.sub   { font-size: clamp(1.1rem, 2vw, 1.5rem); font-weight: 600; line-height:
     <div style="max-width:1000px;width:100%;text-align:center">
       <div class="label anim anim-1">Pricing</div>
       <h2 class="title anim anim-1">Simple, Transparent<br><span class="glow-yellow">Per-Seat Pricing</span></h2>
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1.25rem;margin-top:2rem">
+      <div class="g3" style="display:grid;grid-template-columns:repeat(3,1fr);gap:1.25rem;margin-top:2rem">
         <div class="glass price-card anim anim-2" style="padding:2rem 1.5rem">
           <div style="font-size:.75rem;font-weight:700;color:var(--sq-muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:.75rem">Starter</div>
           <div class="price-amount glow-yellow">£12</div>
@@ -739,7 +788,7 @@ h3.sub   { font-size: clamp(1.1rem, 2vw, 1.5rem); font-weight: 600; line-height:
         <span class="glow-yellow">Strongest Security Asset</span><br>
         <span style="color:var(--sq-muted);font-size:.7em;font-weight:600">— when they're properly trained.</span>
       </h2>
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1.25rem;margin:2.5rem 0">
+      <div class="g3" style="display:grid;grid-template-columns:repeat(3,1fr);gap:1.25rem;margin:2.5rem 0">
         <div class="glass glass-yellow anim anim-3" style="padding:1.5rem">
           <div style="font-size:1.8rem;margin-bottom:.6rem">🎯</div>
           <div style="font-weight:700;margin-bottom:.4rem">Free Pilot</div>
@@ -783,8 +832,8 @@ h3.sub   { font-size: clamp(1.1rem, 2vw, 1.5rem); font-weight: 600; line-height:
   <div class="slide-dots" id="dots"></div>
   <span class="slide-counter" id="counter">1 / 14</span>
   <button class="nav-btn" onclick="next()" title="Next"><i class="bi bi-chevron-right"></i></button>
-  <span style="width:1px;height:18px;background:rgba(255,255,255,.1)"></span>
-  <span style="font-size:.72rem;color:var(--sq-muted)"><span class="kbd">←</span><span class="kbd" style="margin:0 .2rem">→</span> to navigate</span>
+  <span class="nav-sep" style="width:1px;height:18px;background:rgba(255,255,255,.1)"></span>
+  <span class="nav-hint" style="font-size:.72rem;color:var(--sq-muted)"><span class="kbd">←</span><span class="kbd" style="margin:0 .2rem">→</span> to navigate</span>
 </div>
 
 <script>
