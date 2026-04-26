@@ -1,18 +1,32 @@
 #!/usr/bin/env python3
-"""Seed 10 information security training courses — not published."""
+"""
+Seed 10 information security training courses — not published.
+
+Usage:
+    python seed_courses.py                                  # localhost:8000
+    python seed_courses.py https://your-backend.onrender.com
+    BASE_URL=https://your-backend.onrender.com python seed_courses.py
+
+Credentials: override with SEED_ADMIN_EMAIL / SEED_ADMIN_PASSWORD env vars.
+"""
 import sys
+import os
 import requests
 
-BASE = "http://localhost:8000/api/v1"
+_arg_url = sys.argv[1] if len(sys.argv) > 1 else None
+BASE = (_arg_url or os.environ.get("BASE_URL", "http://localhost:8000")).rstrip("/") + "/api/v1"
+
+ADMIN_EMAIL = os.environ.get("SEED_ADMIN_EMAIL", "admin@securequest.local")
+ADMIN_PASSWORD = os.environ.get("SEED_ADMIN_PASSWORD", "Admin1234!")
 
 
 def login():
     r = requests.post(f"{BASE}/auth/login",
-                      json={"email": "admin@securequest.local", "password": "Admin1234!"})
+                      json={"email": ADMIN_EMAIL, "password": ADMIN_PASSWORD})
     if not r.ok:
         print(f"Login failed: {r.status_code} {r.text}")
         sys.exit(1)
-    print("Logged in.\n")
+    print(f"Logged in as {ADMIN_EMAIL}\n")
     return r.json()["access_token"]
 
 
