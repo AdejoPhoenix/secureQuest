@@ -1,11 +1,13 @@
 {% extends "base.html" %}
 {% block title %}Manage Tournaments{% endblock %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="page-header">
   <h4 class="fw-bold text-white mb-0"><i class="bi bi-trophy-fill text-warning me-2"></i>Manage Tournaments</h4>
-  <a href="{{ url_for('admin.create_tournament') }}" class="btn btn-warning fw-bold">
-    <i class="bi bi-plus-lg me-1"></i>New Tournament
-  </a>
+  <div class="page-header-actions">
+    <a href="{{ url_for('admin.create_tournament') }}" class="btn btn-warning fw-bold">
+      <i class="bi bi-plus-lg me-1"></i>New Tournament
+    </a>
+  </div>
 </div>
 
 <div class="card bg-dark border-secondary">
@@ -15,10 +17,10 @@
         <thead class="border-secondary">
           <tr>
             <th class="text-muted">Name</th>
-            <th class="text-muted">Difficulty</th>
-            <th class="text-muted text-center">Timer</th>
-            <th class="text-muted text-center">Challenges</th>
-            <th class="text-muted text-center">Players</th>
+            <th class="text-muted d-none-xs">Difficulty</th>
+            <th class="text-muted text-center d-none-sm">Timer</th>
+            <th class="text-muted text-center d-none-sm">Challenges</th>
+            <th class="text-muted text-center d-none-xs">Players</th>
             <th class="text-muted text-center">Status</th>
             <th class="text-muted text-center">Actions</th>
           </tr>
@@ -27,10 +29,10 @@
           {% for t in tournaments %}
           <tr>
             <td class="fw-semibold text-white">{{ t.name }}</td>
-            <td><span class="badge difficulty-{{ t.difficulty }}">{{ t.difficulty | upper }}</span></td>
-            <td class="text-center text-muted small">{{ (t.timer_seconds // 60) }}m/ch · {{ (t.total_timer_seconds // 60) }}m total</td>
-            <td class="text-center text-muted">{{ t.challenges | length }}</td>
-            <td class="text-center text-muted">{{ t.participant_count }}/{{ t.max_participants }}</td>
+            <td class="d-none-xs"><span class="badge difficulty-{{ t.difficulty }}">{{ t.difficulty | upper }}</span></td>
+            <td class="text-center text-muted small d-none-sm">{{ (t.timer_seconds // 60) }}m/ch · {{ (t.total_timer_seconds // 60) }}m total</td>
+            <td class="text-center text-muted d-none-sm">{{ t.challenges | length }}</td>
+            <td class="text-center text-muted d-none-xs">{{ t.participant_count }}/{{ t.max_participants }}</td>
             <td class="text-center">
               {% if t.is_active %}
               <span class="badge bg-success">Active</span>

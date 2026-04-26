@@ -652,3 +652,62 @@ body { background-color: var(--sq-dark); font-family: 'Segoe UI', system-ui, -ap
   .learn-sidebar.collapsed { width: 0; min-width: 0; }
   .learn-main { margin-left: 0 !important; }
 }
+
+/* ══════════════════════════════════════════════════════════════════
+   RESPONSIVE UTILITIES
+═══════════════════════════════════════════════════════════════════ */
+
+/* Page header — title + action buttons, wraps on mobile */
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: .75rem;
+  margin-bottom: 1.5rem;
+}
+.page-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+  flex-shrink: 0;
+}
+
+/* ── Play HUD — compact on small screens ─────────────────────────── */
+@media (max-width: 576px) {
+  .play-hud { padding: .5rem .75rem; gap: .5rem !important; }
+  .hud-score, .hud-streak, .hud-timer { min-width: 52px; padding-left: .5rem !important; padding-right: .5rem !important; }
+  .hud-value { font-size: 1.1rem !important; }
+  .hud-label { font-size: .6rem; }
+  .hud-brand { font-size: .85rem; }
+}
+
+/* ── Dashboard list items — stack on xs ─────────────────────────── */
+.tournament-list-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: .5rem;
+}
+@media (max-width: 575px) {
+  .tournament-list-item {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: .75rem;
+  }
+  .tournament-list-item .btn { width: 100%; }
+}
+
+/* ── Table column visibility helpers ────────────────────────────── */
+@media (max-width: 575px) {
+  .d-none-xs { display: none !important; }
+}
+@media (max-width: 767px) {
+  .d-none-sm { display: none !important; }
+}
+
+/* ── Mobile card padding ─────────────────────────────────────────── */
+@media (max-width: 575px) {
+  .module-panel { padding: 1rem; }
+  .feedback-inner { padding: 1.5rem 1rem; }
+}

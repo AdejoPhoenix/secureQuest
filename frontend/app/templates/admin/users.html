@@ -10,12 +10,12 @@
         <thead class="border-secondary">
           <tr>
             <th class="text-muted">User</th>
-            <th class="text-muted">Email</th>
+            <th class="text-muted d-none-sm">Email</th>
             <th class="text-muted text-center">Role</th>
             <th class="text-muted text-center">Score</th>
-            <th class="text-muted text-center">Completed</th>
-            <th class="text-muted text-center">Accuracy</th>
-            <th class="text-muted text-center">Provider</th>
+            <th class="text-muted text-center d-none-xs">Completed</th>
+            <th class="text-muted text-center d-none-sm">Accuracy</th>
+            <th class="text-muted text-center d-none-sm">Provider</th>
           </tr>
         </thead>
         <tbody>
@@ -34,16 +34,16 @@
                 <span class="fw-semibold text-white">{{ u.username }}</span>
               </div>
             </td>
-            <td class="text-muted small">{{ u.email }}</td>
+            <td class="text-muted small d-none-sm">{{ u.email }}</td>
             <td class="text-center">
               <span class="badge {% if u.role == 'admin' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
                 {{ u.role | upper }}
               </span>
             </td>
             <td class="text-center text-warning fw-bold">{{ u.total_score }}</td>
-            <td class="text-center text-muted">{{ u.tournaments_completed }}</td>
-            <td class="text-center text-muted">{{ stats.get('accuracy_pct', '—') }}%</td>
-            <td class="text-center">
+            <td class="text-center text-muted d-none-xs">{{ u.tournaments_completed }}</td>
+            <td class="text-center text-muted d-none-sm">{{ stats.get('accuracy_pct', '—') }}%</td>
+            <td class="text-center d-none-sm">
               <span class="badge {% if u.sso_provider == 'google' %}bg-info text-dark{% else %}bg-secondary{% endif %}">
                 {{ u.sso_provider }}
               </span>

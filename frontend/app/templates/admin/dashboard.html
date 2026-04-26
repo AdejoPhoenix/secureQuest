@@ -1,12 +1,12 @@
 {% extends "base.html" %}
 {% block title %}Admin Dashboard{% endblock %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="page-header">
   <div>
     <h4 class="fw-bold text-white mb-0"><i class="bi bi-gear-fill text-warning me-2"></i>Admin Dashboard</h4>
     <p class="text-muted small mb-0">Manage tournaments, courses, users, and view performance reports</p>
   </div>
-  <div class="d-flex gap-2">
+  <div class="page-header-actions">
     <a href="{{ url_for('admin.courses') }}" class="btn btn-outline-info fw-bold">
       <i class="bi bi-book-fill me-1"></i>Manage Courses
     </a>
@@ -140,8 +140,8 @@
             <thead class="border-secondary">
               <tr>
                 <th class="text-muted small">Name</th>
-                <th class="text-muted small">Difficulty</th>
-                <th class="text-muted small text-center">Players</th>
+                <th class="text-muted small d-none-xs">Difficulty</th>
+                <th class="text-muted small text-center d-none-xs">Players</th>
                 <th class="text-muted small text-center">Status</th>
                 <th class="text-muted small"></th>
               </tr>
@@ -150,8 +150,8 @@
               {% for t in tournaments[:8] %}
               <tr>
                 <td class="text-white fw-semibold">{{ t.name }}</td>
-                <td><span class="badge difficulty-{{ t.difficulty }}">{{ t.difficulty | upper }}</span></td>
-                <td class="text-center text-muted">{{ t.participant_count }}</td>
+                <td class="d-none-xs"><span class="badge difficulty-{{ t.difficulty }}">{{ t.difficulty | upper }}</span></td>
+                <td class="text-center text-muted d-none-xs">{{ t.participant_count }}</td>
                 <td class="text-center">
                   {% if t.is_active %}
                   <span class="badge bg-success">Active</span>

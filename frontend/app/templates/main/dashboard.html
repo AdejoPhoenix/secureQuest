@@ -85,13 +85,13 @@
         {% if active %}
         <div class="list-group list-group-flush">
           {% for t in active[:5] %}
-          <div class="list-group-item bg-dark border-secondary d-flex justify-content-between align-items-center">
+          <div class="list-group-item bg-dark border-secondary tournament-list-item">
             <div>
               <div class="fw-semibold text-white">{{ t.name }}</div>
               <div class="d-flex gap-2 mt-1">
                 <span class="badge difficulty-{{ t.difficulty }}">{{ t.difficulty | upper }}</span>
                 <span class="text-muted small"><i class="bi bi-people me-1"></i>{{ t.participant_count }}/{{ t.max_participants }}</span>
-                <span class="text-muted small"><i class="bi bi-clock me-1"></i>{{ (t.timer_seconds // 60) }}m/challenge</span>
+                <span class="text-muted small d-none-xs"><i class="bi bi-clock me-1"></i>{{ (t.timer_seconds // 60) }}m/challenge</span>
               </div>
             </div>
             <a href="{{ url_for('main.tournament_detail', tournament_id=t.id) }}" class="btn btn-sm btn-warning">
