@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status, Form
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 from app.database import get_db
+from app.limiter import limiter
 from app.models.user import User, UserRole, SSOProvider
 from app.schemas.user import UserCreate, UserLogin, UserOut, Token
 from app.auth.jwt import hash_password, verify_password, create_access_token, get_current_user
@@ -10,13 +11,8 @@ from app.auth.oauth import get_google_auth_url, exchange_google_code
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
-def _limiter():
-    from app.main import limiter
-    return limiter
-
-
 @router.post("/register", response_model=Token, status_code=status.HTTP_201_CREATED)
-@_limiter().limit("10/minute")
+@limiter.limit("10/minute")
 def register(request: Request, payload: UserCreate, db: Session = Depends(get_db)):
     if db.query(User).filter(User.email == payload.email).first():
         raise HTTPException(status_code=400, detail="Email already registered")
@@ -38,7 +34,7 @@ def register(request: Request, payload: UserCreate, db: Session = Depends(get_db
 
 
 @router.post("/login", response_model=Token)
-@_limiter().limit("20/minute")
+@limiter.limit("20/minute")
 def login(request: Request, payload: UserLogin, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == payload.email).first()
     if not user or not user.hashed_password or not verify_password(payload.password, user.hashed_password):
@@ -51,7 +47,7 @@ def login(request: Request, payload: UserLogin, db: Session = Depends(get_db)):
 
 
 @router.post("/login/form", response_model=Token)
-@_limiter().limit("20/minute")
+@limiter.limit("20/minute")
 def login_form(
     request: Request,
     username: str = Form(...),
