@@ -11,7 +11,10 @@ Credentials: override with SEED_ADMIN_EMAIL / SEED_ADMIN_PASSWORD env vars.
 """
 import sys
 import os
+from dotenv import load_dotenv
 import requests
+
+load_dotenv()  # loads .env from the current directory if present
 
 _arg_url = sys.argv[1] if len(sys.argv) > 1 else None
 BASE = (_arg_url or os.environ.get("BASE_URL", "http://localhost:8000")).rstrip("/") + "/api/v1"

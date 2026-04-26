@@ -5,12 +5,16 @@ Run: python seed.py
 Requires migrations to have been applied first:
     python migrate.py upgrade
 """
-from sqlalchemy import inspect
-from app.database import SessionLocal, engine
-from app.models.user import User, UserRole, SSOProvider
-from app.models.tournament import Tournament, Challenge, Difficulty, ChallengeType
-from app.auth.jwt import hash_password
-import app.models  # noqa
+from dotenv import load_dotenv
+
+load_dotenv()  # must run before app imports read DATABASE_URL
+
+from sqlalchemy import inspect  # noqa: E402
+from app.database import SessionLocal, engine  # noqa: E402
+from app.models.user import User, UserRole, SSOProvider  # noqa: E402
+from app.models.tournament import Tournament, Challenge, Difficulty, ChallengeType  # noqa: E402
+from app.auth.jwt import hash_password  # noqa: E402
+import app.models  # noqa: E402, F401
 
 if not inspect(engine).has_table("users"):
     print("Error: 'users' table not found. Run migrations first: python migrate.py upgrade")
