@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Body
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from app.database import get_db
@@ -130,9 +130,9 @@ def list_users(db: Session = Depends(get_db), admin: User = Depends(require_admi
 @router.patch("/users/{user_id}/role")
 def set_user_role(
     user_id: int,
-    role: str,
     db: Session = Depends(get_db),
     admin: User = Depends(require_admin),
+    role: str = Body(..., embed=True),
 ):
     from app.models.user import UserRole
     user = db.query(User).filter(User.id == user_id).first()
@@ -141,7 +141,7 @@ def set_user_role(
     try:
         user.role = UserRole(role)
     except ValueError:
-        raise HTTPException(status_code=400, detail=f"Invalid role: {role}")
+        raise HTTPException(status_code=400, detail=f"Invalid role '{role}'. Must be one of: {[r.value for r in UserRole]}")
     db.commit()
     return {"message": f"User {user.username} role updated to {role}"}
 

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status, Form
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 from app.database import get_db
@@ -10,8 +10,14 @@ from app.auth.oauth import get_google_auth_url, exchange_google_code
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
+def _limiter():
+    from app.main import limiter
+    return limiter
+
+
 @router.post("/register", response_model=Token, status_code=status.HTTP_201_CREATED)
-def register(payload: UserCreate, db: Session = Depends(get_db)):
+@_limiter().limit("10/minute")
+def register(request: Request, payload: UserCreate, db: Session = Depends(get_db)):
     if db.query(User).filter(User.email == payload.email).first():
         raise HTTPException(status_code=400, detail="Email already registered")
     if db.query(User).filter(User.username == payload.username).first():
@@ -32,7 +38,8 @@ def register(payload: UserCreate, db: Session = Depends(get_db)):
 
 
 @router.post("/login", response_model=Token)
-def login(payload: UserLogin, db: Session = Depends(get_db)):
+@_limiter().limit("20/minute")
+def login(request: Request, payload: UserLogin, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == payload.email).first()
     if not user or not user.hashed_password or not verify_password(payload.password, user.hashed_password):
         raise HTTPException(status_code=401, detail="Invalid credentials")
@@ -43,24 +50,29 @@ def login(payload: UserLogin, db: Session = Depends(get_db)):
     return Token(access_token=token, user=UserOut.model_validate(user))
 
 
-# OAuth2 form-compatible endpoint for Swagger UI
 @router.post("/login/form", response_model=Token)
+@_limiter().limit("20/minute")
 def login_form(
-    username: str = None,
-    password: str = None,
+    request: Request,
+    username: str = Form(...),
+    password: str = Form(...),
     db: Session = Depends(get_db),
 ):
-    from fastapi import Form
+    """OAuth2 form-compatible endpoint for Swagger UI."""
     user = db.query(User).filter(User.email == username).first()
     if not user or not user.hashed_password or not verify_password(password, user.hashed_password):
         raise HTTPException(status_code=401, detail="Invalid credentials")
+    if not user.is_active:
+        raise HTTPException(status_code=403, detail="Account is inactive")
     token = create_access_token({"sub": str(user.id)})
     return Token(access_token=token, user=UserOut.model_validate(user))
 
 
 @router.get("/google")
 def google_login():
-    return RedirectResponse(get_google_auth_url())
+    import secrets
+    state = secrets.token_urlsafe(16)
+    return RedirectResponse(get_google_auth_url(state=state))
 
 
 @router.get("/google/callback", response_model=Token)
@@ -75,7 +87,6 @@ async def google_callback(code: str, db: Session = Depends(get_db)):
 
     user = db.query(User).filter(User.sso_id == google_id, User.sso_provider == SSOProvider.google).first()
     if not user:
-        # Try to link by email
         user = db.query(User).filter(User.email == email).first()
         if user:
             user.sso_id = google_id
